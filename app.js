@@ -20,6 +20,122 @@ const selectedKeywords = {
 let weaponProfiles = [];
 let weaponIdCounter = 0;
 
+const UNIT_KEYWORD_NAMES = [
+  "Aerial Deployment",
+  "Agile",
+  "Augmented",
+  "Beast",
+  "Bike",
+  "Cloaking Device",
+  "Combat Team Training",
+  "Comm-link",
+  "Communications Relay",
+  "Companion",
+  "Construct",
+  "Defence Cloud",
+  "Defender",
+  "Defender Shield",
+  "Dismantle",
+  "Drop Suit",
+  "Elusive(1)",
+  "Elusive(2)",
+  "Energy Shield(1)",
+  "Energy Shield(2)",
+  "Energy Shield(3)",
+  "Energy Shield(4)",
+  "Engineer",
+  "Evade",
+  "Faithful",
+  "Flight",
+  "Frenzy(1)",
+  "Frenzy(2)",
+  "Frenzy(3)",
+  "Hacker",
+  "Headstrong",
+  "Honourable",
+  "Horde",
+  "Invigorate",
+  "Jump Pack",
+  "Life Drain",
+  "Life Support",
+  "Medic",
+  "Prey",
+  "Psychic",
+  "Rampage",
+  "Recon(3+)",
+  "Recon(4+)",
+  "Recon(5+)",
+  "Recon(6+)",
+  "Resilient(1)",
+  "Resilient(2)",
+  "Scout",
+  "Shield Generator(1)",
+  "Shield Generator(2)",
+  "Shield Generator(4)",
+  "Smokescreen",
+  "Solid",
+  "Stealthy",
+  "Tactician(1)",
+  "Tactician(2)",
+  "Tactician(3)",
+  "Teleport",
+  "Tenacious",
+  "Tough",
+  "Under Control",
+  "Vehicle",
+  "Walker",
+  "Command(1)",
+  "Command(2)",
+  "Command(3)",
+  "Command(4)",
+];
+
+const WEAPON_KEYWORD_NAMES = [
+  "BOOM!(3)",
+  "BOOM!(4)",
+  "BOOM!(5)",
+  "Blast",
+  "Charged",
+  "Explosive",
+  "Explosive((Blast))",
+  "Explosive(blast)",
+  "Fire Control",
+  "Firing Platform(1)",
+  "Firing Platform(2)",
+  "Frag(2)",
+  "Frag(3)",
+  "Frag(4)",
+  "Frag(5)",
+  "Grenade",
+  "Grenade(Shield Generator 1)",
+  "Heavy",
+  "Holo-Sight",
+  "Indirect",
+  "Ink Sac",
+  "It Burns!",
+  "It Burns!(2)",
+  "It Burns!(3)",
+  "It Burns!(4)",
+  "Knockback",
+  "Non-Lethal",
+  "One-Use",
+  "Rapid Fire",
+  "Smoke",
+  "Smoke(1)",
+  "Smash(1)",
+  "Smash(2)",
+  "Sniper Scope",
+  "Stun",
+  "Suppression",
+  "Toxic",
+  "Toxic(1)",
+  "Toxic(2)",
+  "Toxic(3)",
+  "Trap(Frag(3))",
+  "Weight of Fire(1)",
+  "Weight of Fire(2)",
+];
+
 const RANGE_OPTIONS = [
   { value: "CC", label: "CC" },
   ...Array.from({ length: 14 }, (_, index) => ({
@@ -107,6 +223,26 @@ function selectOptions(values, labels = null) {
   return values
     .map((value, index) => `<option value="${escapeHtml(value)}">${escapeHtml(labels ? labels[index] : value)}</option>`)
     .join("");
+}
+
+function uniqueSorted(values) {
+  return [...new Set(values.filter(Boolean))].sort((left, right) => left.localeCompare(right));
+}
+
+function buildKeywordCatalog(meta) {
+  const exported = meta.keyword_tags || [];
+  return {
+    unit: uniqueSorted([...UNIT_KEYWORD_NAMES, ...exported.filter((keyword) => UNIT_KEYWORD_NAMES.includes(keyword))]),
+    weapon: uniqueSorted([...WEAPON_KEYWORD_NAMES, ...exported.filter((keyword) => WEAPON_KEYWORD_NAMES.includes(keyword))]),
+  };
+}
+
+function keywordValue(keywords, prefix) {
+  const match = keywords
+    .map((keyword) => String(keyword))
+    .map((keyword) => keyword.match(new RegExp(`^${prefix}\\((\\d+)`)))
+    .find(Boolean);
+  return match ? num(match[1]) : 0;
 }
 
 function makeWeaponProfile() {
@@ -205,9 +341,9 @@ function readProfile() {
     RangedWeaponCount: rangedWeapons.length,
     StrongRangedWeaponCount: strongRangedWeapons.length,
     HasMeleeInput: meleeWeapons.length > 0,
-    TacticianValue: num(el("tacticianValue").value),
-    ReconScore: num(el("reconScore").value),
-    CommandValue: num(el("commandValue").value),
+    TacticianValue: keywordValue(modelKeywords, "Tactician"),
+    ReconScore: keywordValue(modelKeywords, "Recon"),
+    CommandValue: keywordValue(modelKeywords, "Command"),
     ManualAdjustment: num(el("manualAdjustment").value),
     weapons: activeWeapons,
     modelKeywords,
@@ -471,6 +607,7 @@ function updateResult() {
 function populateControls(meta) {
   const roles = meta.categorical_values.Role || [];
   const baseSizes = meta.categorical_values.BaseSize || [];
+  const keywordCatalog = buildKeywordCatalog(meta);
   el("role").innerHTML = selectOptions(roles);
   el("baseSize").innerHTML = selectOptions(baseSizes);
   el("ra").innerHTML = selectOptions([0, 3, 4, 5, 6], ["-", "3+", "4+", "5+", "6+"]);
@@ -481,16 +618,18 @@ function populateControls(meta) {
   el("ra").value = "5";
   el("fi").value = "5";
   el("sv").value = "5";
-  setupKeywordPicker("modelKeywordPicker", "model", meta.keyword_tags || []);
-  initializeWeapons(meta.keyword_tags || []);
+  model.keywordCatalog = keywordCatalog;
+  setupKeywordPicker("modelKeywordPicker", "model", keywordCatalog.unit);
+  initializeWeapons(keywordCatalog.weapon);
 }
 
 function setupKeywordPicker(containerId, key, keywords) {
   const container = el(containerId);
   container.dataset.key = key;
+  const searchLabel = key === "model" ? "Search unit keywords" : "Search keywords";
   container.innerHTML = `
     <div class="selected-keywords" aria-live="polite"></div>
-    <input class="keyword-search" type="search" autocomplete="off" placeholder="Search keywords" aria-label="Search keywords" />
+    <input class="keyword-search" type="search" autocomplete="off" placeholder="${escapeHtml(searchLabel)}" aria-label="${escapeHtml(searchLabel)}" />
     <div class="keyword-options" hidden></div>
   `;
   const search = container.querySelector(".keyword-search");
@@ -650,8 +789,7 @@ function renderKeywordOptions(container, key, keywords, show) {
   const selected = new Set(selectedKeywords[key].map(normalizeKey));
   const matches = keywords
     .filter((keyword) => !selected.has(normalizeKey(keyword)))
-    .filter((keyword) => !query || normalizeKey(keyword).includes(query))
-    .slice(0, 14);
+    .filter((keyword) => !query || normalizeKey(keyword).includes(query));
   options.innerHTML = matches
     .map((keyword) => `<button class="keyword-option" type="button" data-keyword="${escapeHtml(keyword)}">${escapeHtml(keyword)}</button>`)
     .join("");
@@ -665,8 +803,7 @@ function renderWeaponKeywordOptions(container, weapon, keywords, show) {
   const selected = new Set(weapon.keywords.map(normalizeKey));
   const matches = keywords
     .filter((keyword) => !selected.has(normalizeKey(keyword)))
-    .filter((keyword) => !query || normalizeKey(keyword).includes(query))
-    .slice(0, 14);
+    .filter((keyword) => !query || normalizeKey(keyword).includes(query));
   options.innerHTML = matches
     .map((keyword) => `<button class="keyword-option" type="button" data-keyword="${escapeHtml(keyword)}">${escapeHtml(keyword)}</button>`)
     .join("");
@@ -688,9 +825,9 @@ function enforceNumberLimits() {
 function resetForm() {
   form.reset();
   selectedKeywords.model = [];
-  renderKeywordPicker(el("modelKeywordPicker"), "model", model.meta.keyword_tags || []);
+  renderKeywordPicker(el("modelKeywordPicker"), "model", model.keywordCatalog?.unit || []);
   weaponProfiles = [makeWeaponProfile()];
-  renderWeaponRows(model.meta.keyword_tags || []);
+  renderWeaponRows(model.keywordCatalog?.weapon || []);
   el("qty").value = 1;
   el("vp").value = 1;
   el("spAdvance").value = 1;
@@ -701,9 +838,6 @@ function resetForm() {
   el("ar").value = 0;
   el("hp").value = 1;
   el("sz").value = 1;
-  el("tacticianValue").value = 0;
-  el("reconScore").value = 0;
-  el("commandValue").value = 0;
   el("manualAdjustment").value = 0;
   updateResult();
 }
@@ -735,7 +869,7 @@ el("addWeapon").addEventListener("click", () => {
   if (!model) return;
   if (weaponProfiles.length >= 4) return;
   weaponProfiles.push(makeWeaponProfile());
-  renderWeaponRows(model.meta.keyword_tags || []);
+  renderWeaponRows(model.keywordCatalog?.weapon || []);
   updateResult();
 });
 
