@@ -603,6 +603,7 @@ function calculate(profile) {
 function updateResult() {
   if (!model) return;
   enforceNumberLimits();
+  updateSpecialRulesVisibility();
   const profile = readProfile();
   if (!profile.role || !profile.baseSize) return;
   const result = calculate(profile);
@@ -631,6 +632,7 @@ function populateControls(meta) {
   setupKeywordPicker("modelKeywordPicker", "model", keywordCatalog.unit);
   setupKeywordPicker("specialRulePicker", "specialRules", keywordCatalog.specialRules);
   initializeWeapons(keywordCatalog.weapon);
+  updateSpecialRulesVisibility();
 }
 
 function setupKeywordPicker(containerId, key, keywords) {
@@ -645,11 +647,16 @@ function setupKeywordPicker(containerId, key, keywords) {
     <input class="keyword-search" type="search" autocomplete="off" placeholder="${escapeHtml(searchLabel)}" aria-label="${escapeHtml(searchLabel)}" />
     <div class="keyword-options" hidden></div>
   `;
+  const selected = container.querySelector(".selected-keywords");
   const search = container.querySelector(".keyword-search");
   const options = container.querySelector(".keyword-options");
 
   search.addEventListener("focus", () => renderKeywordOptions(container, key, keywords, true));
   search.addEventListener("input", () => renderKeywordOptions(container, key, keywords, true));
+  selected.addEventListener("click", () => {
+    renderKeywordOptions(container, key, keywords, true);
+    search.focus();
+  });
   options.addEventListener("click", (event) => {
     const button = event.target.closest("[data-keyword]");
     if (!button) return;
@@ -731,11 +738,16 @@ function setupWeaponKeywordPicker(container, weapon, keywords) {
     <input class="keyword-search" type="search" autocomplete="off" placeholder="Search keywords" aria-label="Search weapon keywords" />
     <div class="keyword-options" hidden></div>
   `;
+  const selected = container.querySelector(".selected-keywords");
   const search = container.querySelector(".keyword-search");
   const options = container.querySelector(".keyword-options");
 
   search.addEventListener("focus", () => renderWeaponKeywordOptions(container, weapon, keywords, true));
   search.addEventListener("input", () => renderWeaponKeywordOptions(container, weapon, keywords, true));
+  selected.addEventListener("click", () => {
+    renderWeaponKeywordOptions(container, weapon, keywords, true);
+    search.focus();
+  });
   options.addEventListener("click", (event) => {
     const button = event.target.closest("[data-keyword]");
     if (!button) return;
@@ -823,6 +835,12 @@ function renderWeaponKeywordOptions(container, weapon, keywords, show) {
   options.hidden = !show || matches.length === 0;
 }
 
+function updateSpecialRulesVisibility() {
+  const section = el("specialRulesSection");
+  if (!section) return;
+  section.hidden = el("role").value !== "Leader";
+}
+
 function enforceNumberLimits() {
   form.querySelectorAll('input[type="number"]').forEach((input) => {
     if (input.value === "") return;
@@ -841,6 +859,7 @@ function resetForm() {
   selectedKeywords.specialRules = [];
   renderKeywordPicker(el("modelKeywordPicker"), "model", model.keywordCatalog?.unit || []);
   renderKeywordPicker(el("specialRulePicker"), "specialRules", model.keywordCatalog?.specialRules || []);
+  updateSpecialRulesVisibility();
   weaponProfiles = [makeWeaponProfile()];
   renderWeaponRows(model.keywordCatalog?.weapon || []);
   el("qty").value = 1;
