@@ -395,6 +395,26 @@ button:focus,
   padding: 0 12px 12px;
 }
 
+.footer-box {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.footer-box output {
+  display: grid;
+  align-items: center;
+  min-height: 32px;
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+}
+
 .extras {
   display: grid;
   grid-template-columns: minmax(120px, 180px);

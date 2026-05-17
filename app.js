@@ -5,12 +5,14 @@ const MODEL_PATHS = {
   base: "model/base_model.csv",
   multiplier: "model/multiplier_model.csv",
   rounding: "model/rounding_model.csv",
+  vp: "model/vp_model.csv",
 };
 const MODEL_BUNDLE_PATH = "./model/model_bundle.js";
 
 const el = (id) => document.getElementById(id);
 const statusEl = el("status");
 const pointsEl = el("points");
+const vpOutputEl = el("vpOutput");
 const continuousEl = el("continuous");
 const nearestEl = el("nearest");
 const roundProbabilityEl = el("roundProbability");
@@ -334,7 +336,6 @@ function readProfile() {
     role: el("role").value,
     baseSize: el("baseSize").value,
     Qty: num(el("qty").value, 1),
-    VP: num(el("vp").value),
     SP_Advance: num(el("spAdvance").value),
     SP_Sprint: num(el("spSprint").value),
     RA: num(el("ra").value),
@@ -372,7 +373,6 @@ function baseNumeric(profile) {
     AR: profile.AR,
     HP: profile.HP,
     SZ: profile.SZ,
-    VP: profile.VP,
     MaxRange: profile.MaxRange,
     MaxAP: profile.MaxAP,
     WeaponCount: profile.WeaponCount,
@@ -418,8 +418,6 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   const fastMelee = profile.SP_Advance >= 2 && profile.FI > 0 && profile.FI <= 4;
   const eliteAllRounder = profile.RA > 0 && profile.RA <= 4 && profile.FI > 0 && profile.FI <= 4 && profile.SV > 0 && profile.SV <= 4 && profile.AR >= 1;
   const duplicateRanged = profile.RangedWeaponCount >= 2;
-  const highVP = profile.VP >= 2;
-  const highValue = highVP || role === "Legend" || role === "Support" || profile.HP >= 4;
   const mobility = hasFlight || hasAnyKeyword(profile, ["Agile", "Scout", "Teleport", "Jump Pack", "Bike"]);
   const dropSuit = hasKeyword(profile, "Drop Suit");
   const deployment = dropSuit || hasAnyKeyword(profile, ["Aerial Deployment", "Scout", "Infiltrate"]);
@@ -467,12 +465,9 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   add(role === "Support" && hasHeavy, "RoleHeavySupport");
   add(role === "Legend" || hasKeyword(profile, "Named"), "NamedOrLegend");
   add(hasKeyword(profile, "Secret Mission"), "SecretMissionTarget");
-  add(highVP, "HighVP");
-  add(highValue, "HighValueTarget");
   add(mobility, "HasMobilityKeyword");
   add(dropSuit, "HasDropSuit");
   add(deployment, "HasDeploymentTrick");
-  add(troop && profile.VP >= 1 && profile.SP_Advance >= 2, "ObjectiveRunner");
   add(mobility && hasRanged, "MobileShooter");
   add(mobility && hasMelee, "MobileMeleeThreat");
   add(specialist && deployment, "RoleDeploymentSpecialist");
@@ -577,6 +572,25 @@ function roundingNumeric(profile, continuousPrediction) {
   };
 }
 
+function vpNumeric(profile, result) {
+  return {
+    ...baseNumeric(profile),
+    PredictedCostForVP: result.final,
+    PredictedCostContinuousForVP: result.continuous,
+    LogPredictedCostForVP: Math.log(Math.max(0.1, result.continuous)),
+    KeywordCountForVP: profile.allKeywords.length,
+  };
+}
+
+function calculateVp(profile, result) {
+  if (!model.vp || !model.meta.vp) return 1;
+  const active = activeFeatures(profile);
+  const rawVp = contribution(model.vp, vpNumeric(profile, result), active, model.meta.vp.intercept);
+  const minVp = model.meta.vp.min_vp ?? 0;
+  const maxVp = model.meta.vp.max_vp ?? 5;
+  return clamp(Math.round(rawVp), minVp, maxVp);
+}
+
 function calculate(profile) {
   const baseActive = activeFeatures(profile);
   const rawBase = contribution(model.base, baseNumeric(profile), baseActive, model.meta.intercept);
@@ -589,6 +603,15 @@ function calculate(profile) {
   const roundProbability = 1 / (1 + Math.exp(-roundScore));
   const rounded = roundProbability >= model.meta.rounding.threshold ? Math.ceil(floored) : Math.floor(floored);
   const final = Math.max(1, Math.round(rounded + profile.ManualAdjustment));
+  const vp = calculateVp(profile, {
+    rawBase,
+    multiplier,
+    continuous: floored,
+    nearest: Math.round(floored),
+    roundProbability,
+    rounded,
+    final,
+  });
   return {
     rawBase,
     multiplier,
@@ -597,6 +620,7 @@ function calculate(profile) {
     roundProbability,
     rounded,
     final,
+    vp,
   };
 }
 
@@ -609,6 +633,8 @@ function updateResult() {
   const result = calculate(profile);
   pointsEl.value = result.final;
   pointsEl.textContent = result.final;
+  vpOutputEl.value = result.vp;
+  vpOutputEl.textContent = result.vp;
   continuousEl.textContent = result.continuous.toFixed(2);
   nearestEl.textContent = result.nearest.toString();
   roundProbabilityEl.textContent = `${Math.round(result.roundProbability * 100)}%`;
@@ -863,7 +889,6 @@ function resetForm() {
   weaponProfiles = [makeWeaponProfile()];
   renderWeaponRows(model.keywordCatalog?.weapon || []);
   el("qty").value = 1;
-  el("vp").value = 1;
   el("spAdvance").value = 1;
   el("spSprint").value = 2;
   el("ra").value = 5;
@@ -881,24 +906,28 @@ async function loadModel() {
   let baseRows;
   let multiplierRows;
   let roundingRows;
+  let vpRows;
   try {
-    const [metaResponse, fetchedBaseRows, fetchedMultiplierRows, fetchedRoundingRows] = await Promise.all([
+    const [metaResponse, fetchedBaseRows, fetchedMultiplierRows, fetchedRoundingRows, fetchedVpRows] = await Promise.all([
       fetch(MODEL_PATHS.meta),
       loadCsv(MODEL_PATHS.base),
       loadCsv(MODEL_PATHS.multiplier),
       loadCsv(MODEL_PATHS.rounding),
+      loadCsv(MODEL_PATHS.vp),
     ]);
     if (!metaResponse.ok) throw new Error("Could not load model metadata");
     meta = await metaResponse.json();
     baseRows = fetchedBaseRows;
     multiplierRows = fetchedMultiplierRows;
     roundingRows = fetchedRoundingRows;
+    vpRows = fetchedVpRows;
   } catch (fetchError) {
     const bundled = await import(MODEL_BUNDLE_PATH);
     meta = bundled.meta;
     baseRows = parseCsv(bundled.baseCsv);
     multiplierRows = parseCsv(bundled.multiplierCsv);
     roundingRows = parseCsv(bundled.roundingCsv);
+    vpRows = parseCsv(bundled.vpCsv);
     console.warn("Using bundled model fallback", fetchError);
   }
   model = {
@@ -906,6 +935,7 @@ async function loadModel() {
     base: processPack(baseRows),
     multiplier: processPack(multiplierRows),
     rounding: processPack(roundingRows),
+    vp: processPack(vpRows),
   };
   populateControls(meta);
   statusEl.value = "Ready";
@@ -928,6 +958,8 @@ loadModel().catch((error) => {
   statusEl.value = "Model failed to load";
   pointsEl.value = "!";
   pointsEl.textContent = "!";
+  vpOutputEl.value = "!";
+  vpOutputEl.textContent = "!";
 });
 
 document.addEventListener("click", (event) => {
