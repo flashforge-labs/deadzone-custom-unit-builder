@@ -283,21 +283,54 @@ button:focus,
   border-top: 8px solid #050505;
 }
 
-.weapon-title {
+.weapon-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 6px 10px;
   color: #fff;
   background: #050505;
+}
+
+.weapon-title {
+  padding: 0;
+  color: inherit;
+  background: transparent;
   font-weight: 900;
+}
+
+.add-weapon-button {
+  width: auto;
+  min-height: 28px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.weapons-root {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.weapon-row {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.82);
 }
 
 .weapon-grid {
   display: grid;
-  grid-template-columns: repeat(8, minmax(90px, 1fr));
-  border-top: 1px solid var(--line);
+  grid-template-columns: minmax(160px, 1.4fr) 110px 90px minmax(280px, 2fr) 44px;
 }
 
 .weapon-grid label {
-  min-height: 66px;
+  min-height: 72px;
   border-right: 1px solid var(--line);
   text-align: center;
 }
@@ -306,23 +339,60 @@ button:focus,
   border-right: 0;
 }
 
-.weapon-grid input {
+.weapon-grid input,
+.weapon-grid select {
   border: 0;
   text-align: center;
   font-weight: 700;
   background: transparent;
 }
 
-.toggle-cell {
-  display: grid;
-  grid-template-columns: 1fr;
-  justify-items: center;
+.weapon-grid .keyword-picker {
+  padding: 6px;
 }
 
-.toggle-cell input {
-  width: 20px;
-  min-height: 20px;
-  margin-top: 8px;
+.weapon-grid .selected-keywords {
+  min-height: 40px;
+}
+
+.weapon-grid .keyword-search {
+  margin-top: 4px;
+}
+
+.weapon-grid .line-label {
+  padding: 5px 4px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.56);
+  font-weight: 900;
+  text-align: center;
+}
+
+.weapon-actions {
+  display: grid;
+  align-items: stretch;
+}
+
+.remove-weapon-button {
+  height: 100%;
+  min-height: 72px;
+  border: 0;
+  background: #f4d8d4;
+  color: #5e1d14;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.remove-weapon-button:disabled {
+  background: #eceff1;
+  color: #98a2ab;
+  cursor: default;
+}
+
+.weapon-footer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 220px));
+  gap: 10px;
+  padding: 0 12px 12px;
 }
 
 .extras {
@@ -375,9 +445,12 @@ dd {
     grid-template-columns: 1fr 1fr;
   }
 
-  .stat-strip,
-  .weapon-grid {
+  .stat-strip {
     grid-template-columns: repeat(4, minmax(80px, 1fr));
+  }
+
+  .weapon-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .keyword-line,
@@ -397,8 +470,15 @@ dd {
     grid-template-columns: 1fr;
   }
 
-  .stat-strip,
-  .weapon-grid {
+  .stat-strip {
     grid-template-columns: repeat(2, minmax(80px, 1fr));
+  }
+
+  .weapon-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .weapon-footer {
+    grid-template-columns: 1fr;
   }
 }

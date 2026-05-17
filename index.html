@@ -79,46 +79,21 @@
           <div id="modelKeywordPicker" class="keyword-picker"></div>
         </section>
 
-        <section class="keyword-line" aria-label="Weapon keywords">
-          <span class="line-label">Weapon Keywords</span>
-          <div id="weaponKeywordPicker" class="keyword-picker"></div>
-        </section>
-
         <section class="rule-line" aria-label="Special rule text">
           <span class="line-label">Notes</span>
           <input id="notes" autocomplete="off" placeholder="Optional custom rule note" />
         </section>
 
         <section class="weapon-card" aria-label="Weapon stats">
-          <div class="weapon-title">Weapon Stats</div>
-          <div class="weapon-grid">
-            <label>
-              <span>Range</span>
-              <input id="maxRange" type="number" min="0" max="14" step="1" value="6" />
-            </label>
-            <label>
-              <span>AP</span>
-              <input id="maxAP" type="number" min="0" max="5" step="1" value="0" />
-            </label>
-            <label>
-              <span>Weapons</span>
-              <input id="weaponCount" type="number" min="0" max="4" step="1" value="1" />
-            </label>
-            <label>
-              <span>Ranged</span>
-              <input id="rangedWeaponCount" type="number" min="0" max="4" step="1" value="1" />
-            </label>
-            <label>
-              <span>Strong</span>
-              <input id="strongRangedWeaponCount" type="number" min="0" max="4" step="1" value="0" />
-            </label>
+          <div class="weapon-title-row">
+            <div class="weapon-title">Weapon Stats</div>
+            <button id="addWeapon" class="add-weapon-button" type="button">+ Add Weapon</button>
+          </div>
+          <div id="weaponsRoot" class="weapons-root" aria-live="polite"></div>
+          <div class="weapon-footer">
             <label>
               <span>VP</span>
               <input id="vp" name="vp" type="number" min="0" max="5" step="1" value="1" />
-            </label>
-            <label class="toggle-cell">
-              <input id="hasMelee" type="checkbox" />
-              <span>Melee</span>
             </label>
             <label>
               <span>Manual +/-</span>

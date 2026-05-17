@@ -16,8 +16,17 @@ const form = el("unit-form");
 let model = null;
 const selectedKeywords = {
   model: [],
-  weapon: [],
 };
+let weaponProfiles = [];
+let weaponIdCounter = 0;
+
+const RANGE_OPTIONS = [
+  { value: "CC", label: "CC" },
+  ...Array.from({ length: 14 }, (_, index) => ({
+    value: String(index + 1),
+    label: `R${index + 1}`,
+  })),
+];
 
 function parseCsv(text) {
   const rows = [];
@@ -100,6 +109,39 @@ function selectOptions(values, labels = null) {
     .join("");
 }
 
+function makeWeaponProfile() {
+  weaponIdCounter += 1;
+  return {
+    id: `weapon-${weaponIdCounter}`,
+    name: "",
+    range: "6",
+    ap: 0,
+    keywords: [],
+  };
+}
+
+function isWeaponRanged(weapon) {
+  return weapon.range !== "CC" && num(weapon.range) > 0;
+}
+
+function isStrongRangedWeapon(weapon) {
+  if (!isWeaponRanged(weapon)) return false;
+  const keywordSet = new Set(weapon.keywords.map(normalizeKey));
+  if (num(weapon.ap) >= 2) return true;
+  return [
+    "heavy",
+    "sniper",
+    "suppression",
+    "rapid fire",
+    "weight of fire(1)",
+    "frag(3)",
+    "frag",
+    "explosive",
+    "indirect",
+    "fire(1)",
+  ].some((keyword) => keywordSet.has(keyword));
+}
+
 function hasKeyword(profile, keyword) {
   return profile.keywordSet.has(normalizeKey(keyword));
 }
@@ -137,7 +179,11 @@ function processPack(rows) {
 
 function readProfile() {
   const modelKeywords = [...selectedKeywords.model];
-  const weaponKeywords = [...selectedKeywords.weapon];
+  const activeWeapons = weaponProfiles.filter((weapon) => weapon.name.trim() || weapon.range === "CC" || num(weapon.range) > 0 || num(weapon.ap) > 0 || weapon.keywords.length);
+  const weaponKeywords = activeWeapons.flatMap((weapon) => weapon.keywords);
+  const rangedWeapons = activeWeapons.filter(isWeaponRanged);
+  const strongRangedWeapons = rangedWeapons.filter(isStrongRangedWeapon);
+  const meleeWeapons = activeWeapons.filter((weapon) => weapon.range === "CC");
   const allKeywords = [...modelKeywords, ...weaponKeywords];
   return {
     unitName: el("unitName").value.trim(),
@@ -153,16 +199,17 @@ function readProfile() {
     AR: num(el("ar").value),
     HP: num(el("hp").value),
     SZ: num(el("sz").value),
-    MaxRange: num(el("maxRange").value),
-    MaxAP: num(el("maxAP").value),
-    WeaponCount: num(el("weaponCount").value),
-    RangedWeaponCount: num(el("rangedWeaponCount").value),
-    StrongRangedWeaponCount: num(el("strongRangedWeaponCount").value),
-    HasMeleeInput: el("hasMelee").checked,
+    MaxRange: rangedWeapons.length ? Math.max(...rangedWeapons.map((weapon) => num(weapon.range))) : 0,
+    MaxAP: activeWeapons.length ? Math.max(...activeWeapons.map((weapon) => num(weapon.ap))) : 0,
+    WeaponCount: activeWeapons.length,
+    RangedWeaponCount: rangedWeapons.length,
+    StrongRangedWeaponCount: strongRangedWeapons.length,
+    HasMeleeInput: meleeWeapons.length > 0,
     TacticianValue: num(el("tacticianValue").value),
     ReconScore: num(el("reconScore").value),
     CommandValue: num(el("commandValue").value),
     ManualAdjustment: num(el("manualAdjustment").value),
+    weapons: activeWeapons,
     modelKeywords,
     weaponKeywords,
     allKeywords,
@@ -435,7 +482,7 @@ function populateControls(meta) {
   el("fi").value = "5";
   el("sv").value = "5";
   setupKeywordPicker("modelKeywordPicker", "model", meta.keyword_tags || []);
-  setupKeywordPicker("weaponKeywordPicker", "weapon", meta.keyword_tags || []);
+  initializeWeapons(meta.keyword_tags || []);
 }
 
 function setupKeywordPicker(containerId, key, keywords) {
@@ -464,6 +511,92 @@ function setupKeywordPicker(containerId, key, keywords) {
   renderKeywordPicker(container, key, keywords);
 }
 
+function initializeWeapons(keywords) {
+  weaponProfiles = [makeWeaponProfile()];
+  renderWeaponRows(keywords);
+}
+
+function renderWeaponRows(keywords) {
+  const root = el("weaponsRoot");
+  root.innerHTML = weaponProfiles
+    .map(
+      (weapon, index) => `
+        <div class="weapon-row" data-weapon-id="${escapeHtml(weapon.id)}">
+          <div class="weapon-grid">
+            <label>
+              <span>Weapon</span>
+              <input class="weapon-name" type="text" maxlength="40" value="${escapeHtml(weapon.name)}" placeholder="Weapon ${index + 1}" />
+            </label>
+            <label>
+              <span>Range</span>
+              <select class="weapon-range">${RANGE_OPTIONS.map((option) => `<option value="${escapeHtml(option.value)}"${option.value === weapon.range ? " selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}</select>
+            </label>
+            <label>
+              <span>AP</span>
+              <input class="weapon-ap" type="number" min="0" max="5" step="1" value="${escapeHtml(weapon.ap)}" />
+            </label>
+            <div class="weapon-keyword-cell">
+              <span class="line-label">Weapon Keywords</span>
+              <div class="keyword-picker weapon-keyword-picker"></div>
+            </div>
+            <div class="weapon-actions">
+              <button class="remove-weapon-button" type="button" ${weaponProfiles.length === 1 ? "disabled" : ""} aria-label="Remove weapon ${index + 1}">x</button>
+            </div>
+          </div>
+        </div>
+      `,
+    )
+    .join("");
+
+  root.querySelectorAll(".weapon-row").forEach((row) => {
+    const weapon = weaponProfiles.find((entry) => entry.id === row.dataset.weaponId);
+    if (!weapon) return;
+    row.querySelector(".weapon-name").addEventListener("input", (event) => {
+      weapon.name = event.target.value;
+      updateResult();
+    });
+    row.querySelector(".weapon-range").addEventListener("change", (event) => {
+      weapon.range = event.target.value;
+      updateResult();
+    });
+    row.querySelector(".weapon-ap").addEventListener("input", (event) => {
+      weapon.ap = clamp(num(event.target.value), 0, 5);
+      event.target.value = String(weapon.ap);
+      updateResult();
+    });
+    row.querySelector(".remove-weapon-button").addEventListener("click", () => {
+      weaponProfiles = weaponProfiles.filter((entry) => entry.id !== weapon.id);
+      renderWeaponRows(keywords);
+      updateResult();
+    });
+    setupWeaponKeywordPicker(row.querySelector(".weapon-keyword-picker"), weapon, keywords);
+  });
+}
+
+function setupWeaponKeywordPicker(container, weapon, keywords) {
+  container.innerHTML = `
+    <div class="selected-keywords" aria-live="polite"></div>
+    <input class="keyword-search" type="search" autocomplete="off" placeholder="Search keywords" aria-label="Search weapon keywords" />
+    <div class="keyword-options" hidden></div>
+  `;
+  const search = container.querySelector(".keyword-search");
+  const options = container.querySelector(".keyword-options");
+
+  search.addEventListener("focus", () => renderWeaponKeywordOptions(container, weapon, keywords, true));
+  search.addEventListener("input", () => renderWeaponKeywordOptions(container, weapon, keywords, true));
+  options.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-keyword]");
+    if (!button) return;
+    weapon.keywords.push(button.dataset.keyword);
+    search.value = "";
+    renderWeaponKeywordPicker(container, weapon, keywords);
+    updateResult();
+    search.focus();
+  });
+
+  renderWeaponKeywordPicker(container, weapon, keywords);
+}
+
 function renderKeywordPicker(container, key, keywords) {
   const selected = container.querySelector(".selected-keywords");
   selected.innerHTML = selectedKeywords[key].length
@@ -487,11 +620,49 @@ function renderKeywordPicker(container, key, keywords) {
   renderKeywordOptions(container, key, keywords, false);
 }
 
+function renderWeaponKeywordPicker(container, weapon, keywords) {
+  const selected = container.querySelector(".selected-keywords");
+  selected.innerHTML = weapon.keywords.length
+    ? weapon.keywords
+        .map((keyword, index) => `
+          <span class="keyword-chip">
+            ${escapeHtml(keyword)}
+            <button type="button" aria-label="Remove ${escapeHtml(keyword)}" data-remove-index="${index}">x</button>
+          </span>
+        `)
+        .join("")
+    : `<span class="keyword-placeholder">No keywords selected</span>`;
+
+  selected.querySelectorAll("[data-remove-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      weapon.keywords.splice(Number(button.dataset.removeIndex), 1);
+      renderWeaponKeywordPicker(container, weapon, keywords);
+      updateResult();
+    });
+  });
+  renderWeaponKeywordOptions(container, weapon, keywords, false);
+}
+
 function renderKeywordOptions(container, key, keywords, show) {
   const search = container.querySelector(".keyword-search");
   const options = container.querySelector(".keyword-options");
   const query = normalizeKey(search.value);
   const selected = new Set(selectedKeywords[key].map(normalizeKey));
+  const matches = keywords
+    .filter((keyword) => !selected.has(normalizeKey(keyword)))
+    .filter((keyword) => !query || normalizeKey(keyword).includes(query))
+    .slice(0, 14);
+  options.innerHTML = matches
+    .map((keyword) => `<button class="keyword-option" type="button" data-keyword="${escapeHtml(keyword)}">${escapeHtml(keyword)}</button>`)
+    .join("");
+  options.hidden = !show || matches.length === 0;
+}
+
+function renderWeaponKeywordOptions(container, weapon, keywords, show) {
+  const search = container.querySelector(".keyword-search");
+  const options = container.querySelector(".keyword-options");
+  const query = normalizeKey(search.value);
+  const selected = new Set(weapon.keywords.map(normalizeKey));
   const matches = keywords
     .filter((keyword) => !selected.has(normalizeKey(keyword)))
     .filter((keyword) => !query || normalizeKey(keyword).includes(query))
@@ -517,10 +688,9 @@ function enforceNumberLimits() {
 function resetForm() {
   form.reset();
   selectedKeywords.model = [];
-  selectedKeywords.weapon = [];
-  document.querySelectorAll(".keyword-picker").forEach((container) => {
-    renderKeywordPicker(container, container.dataset.key, model.meta.keyword_tags || []);
-  });
+  renderKeywordPicker(el("modelKeywordPicker"), "model", model.meta.keyword_tags || []);
+  weaponProfiles = [makeWeaponProfile()];
+  renderWeaponRows(model.meta.keyword_tags || []);
   el("qty").value = 1;
   el("vp").value = 1;
   el("spAdvance").value = 1;
@@ -531,12 +701,6 @@ function resetForm() {
   el("ar").value = 0;
   el("hp").value = 1;
   el("sz").value = 1;
-  el("maxRange").value = 6;
-  el("maxAP").value = 0;
-  el("weaponCount").value = 1;
-  el("rangedWeaponCount").value = 1;
-  el("strongRangedWeaponCount").value = 0;
-  el("hasMelee").checked = false;
   el("tacticianValue").value = 0;
   el("reconScore").value = 0;
   el("commandValue").value = 0;
@@ -567,6 +731,13 @@ async function loadModel() {
 form.addEventListener("input", updateResult);
 form.addEventListener("change", updateResult);
 el("reset").addEventListener("click", resetForm);
+el("addWeapon").addEventListener("click", () => {
+  if (!model) return;
+  if (weaponProfiles.length >= 4) return;
+  weaponProfiles.push(makeWeaponProfile());
+  renderWeaponRows(model.meta.keyword_tags || []);
+  updateResult();
+});
 
 loadModel().catch((error) => {
   console.error(error);
