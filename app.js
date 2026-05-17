@@ -73,6 +73,8 @@ const UNIT_KEYWORD_NAMES = [
   "Shield Generator(1)",
   "Shield Generator(2)",
   "Shield Generator(4)",
+  "Special Order",
+  "Secret Mission",
   "Smokescreen",
   "Solid",
   "Stealthy",
@@ -85,6 +87,7 @@ const UNIT_KEYWORD_NAMES = [
   "Under Control",
   "Vehicle",
   "Walker",
+  "Named",
   "Command(1)",
   "Command(2)",
   "Command(3)",
@@ -643,7 +646,7 @@ function setupKeywordPicker(containerId, key, keywords) {
     if (!button) return;
     selectedKeywords[key].push(button.dataset.keyword);
     search.value = "";
-    renderKeywordPicker(container, key, keywords);
+    renderKeywordPicker(container, key, keywords, true);
     updateResult();
     search.focus();
   });
@@ -729,7 +732,7 @@ function setupWeaponKeywordPicker(container, weapon, keywords) {
     if (!button) return;
     weapon.keywords.push(button.dataset.keyword);
     search.value = "";
-    renderWeaponKeywordPicker(container, weapon, keywords);
+    renderWeaponKeywordPicker(container, weapon, keywords, true);
     updateResult();
     search.focus();
   });
@@ -737,7 +740,7 @@ function setupWeaponKeywordPicker(container, weapon, keywords) {
   renderWeaponKeywordPicker(container, weapon, keywords);
 }
 
-function renderKeywordPicker(container, key, keywords) {
+function renderKeywordPicker(container, key, keywords, keepOpen = false) {
   const selected = container.querySelector(".selected-keywords");
   selected.innerHTML = selectedKeywords[key].length
     ? selectedKeywords[key]
@@ -757,10 +760,10 @@ function renderKeywordPicker(container, key, keywords) {
       updateResult();
     });
   });
-  renderKeywordOptions(container, key, keywords, false);
+  renderKeywordOptions(container, key, keywords, keepOpen);
 }
 
-function renderWeaponKeywordPicker(container, weapon, keywords) {
+function renderWeaponKeywordPicker(container, weapon, keywords, keepOpen = false) {
   const selected = container.querySelector(".selected-keywords");
   selected.innerHTML = weapon.keywords.length
     ? weapon.keywords
@@ -780,7 +783,7 @@ function renderWeaponKeywordPicker(container, weapon, keywords) {
       updateResult();
     });
   });
-  renderWeaponKeywordOptions(container, weapon, keywords, false);
+  renderWeaponKeywordOptions(container, weapon, keywords, keepOpen);
 }
 
 function renderKeywordOptions(container, key, keywords, show) {
