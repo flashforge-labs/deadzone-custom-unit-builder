@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deadzone Custom Unit Builder</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <h1>Deadzone Custom Unit Builder</h1>
+          <p>Unofficial points estimate for private custom unit profiles.</p>
+        </div>
+        <output id="status" class="status">Loading model...</output>
+      </header>
+
+      <section class="builder-grid" aria-label="Custom unit builder">
+        <form id="unit-form" class="unit-form">
+          <fieldset>
+            <legend>Profile</legend>
+            <label>
+              Unit name
+              <input id="unitName" name="unitName" autocomplete="off" placeholder="Custom unit" />
+            </label>
+            <label>
+              Role
+              <select id="role" name="role"></select>
+            </label>
+            <label>
+              Base
+              <select id="baseSize" name="baseSize"></select>
+            </label>
+            <label>
+              VP
+              <input id="vp" name="vp" type="number" min="0" step="1" value="1" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Stats</legend>
+            <label>
+              SP Advance
+              <input id="spAdvance" type="number" min="0" step="1" value="1" />
+            </label>
+            <label>
+              SP Sprint
+              <input id="spSprint" type="number" min="0" step="1" value="2" />
+            </label>
+            <label>
+              RA
+              <input id="ra" type="number" min="0" max="9" step="1" value="5" />
+            </label>
+            <label>
+              FI
+              <input id="fi" type="number" min="0" max="9" step="1" value="5" />
+            </label>
+            <label>
+              SV
+              <input id="sv" type="number" min="0" max="9" step="1" value="5" />
+            </label>
+            <label>
+              AR
+              <input id="ar" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              HP
+              <input id="hp" type="number" min="1" step="1" value="1" />
+            </label>
+            <label>
+              SZ
+              <input id="sz" type="number" min="1" step="1" value="1" />
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Weapons</legend>
+            <label>
+              Max range
+              <input id="maxRange" type="number" min="0" step="1" value="6" />
+            </label>
+            <label>
+              Max AP
+              <input id="maxAP" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              Weapons
+              <input id="weaponCount" type="number" min="0" step="1" value="1" />
+            </label>
+            <label>
+              Ranged weapons
+              <input id="rangedWeaponCount" type="number" min="0" step="1" value="1" />
+            </label>
+            <label>
+              Strong ranged
+              <input id="strongRangedWeaponCount" type="number" min="0" step="1" value="0" />
+            </label>
+            <label class="toggle">
+              <input id="hasMelee" type="checkbox" />
+              Melee weapon
+            </label>
+          </fieldset>
+
+          <fieldset class="wide">
+            <legend>Keywords</legend>
+            <label>
+              Model keywords
+              <textarea id="modelKeywords" rows="3" placeholder="Agile | Engineer | Energy Shield(1)"></textarea>
+            </label>
+            <label>
+              Weapon keywords
+              <textarea id="weaponKeywords" rows="3" placeholder="Rapid Fire | Weight of Fire(1)"></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>Extras</legend>
+            <label>
+              Tactician value
+              <input id="tacticianValue" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              Recon score
+              <input id="reconScore" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              Command value
+              <input id="commandValue" type="number" min="0" step="1" value="0" />
+            </label>
+            <label>
+              Manual +/-
+              <input id="manualAdjustment" type="number" step="1" value="0" />
+            </label>
+          </fieldset>
+        </form>
+
+        <aside class="result-panel" aria-label="Estimated points">
+          <span class="result-label">Estimated points</span>
+          <output id="points" class="points">...</output>
+          <span id="unit-summary" class="unit-summary">Enter a profile to calculate.</span>
+          <button id="reset" type="button">Reset</button>
+          <details>
+            <summary>Advanced</summary>
+            <dl>
+              <dt>Continuous estimate</dt>
+              <dd id="continuous">...</dd>
+              <dt>Nearest integer</dt>
+              <dd id="nearest">...</dd>
+              <dt>Round-up probability</dt>
+              <dd id="roundProbability">...</dd>
+            </dl>
+          </details>
+        </aside>
+      </section>
+    </main>
+
+    <datalist id="keyword-list"></datalist>
+    <script src="app.js" type="module"></script>
+  </body>
+</html>
