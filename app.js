@@ -1,3 +1,5 @@
+import { leaderRules } from "./model/leader_rules.js";
+
 const MODEL_PATHS = {
   meta: "model/model_meta.json",
   base: "model/base_model.csv",
@@ -17,6 +19,7 @@ const form = el("unit-form");
 let model = null;
 const selectedKeywords = {
   model: [],
+  specialRules: [],
 };
 let weaponProfiles = [];
 let weaponIdCounter = 0;
@@ -238,6 +241,7 @@ function buildKeywordCatalog(meta) {
   return {
     unit: uniqueSorted([...UNIT_KEYWORD_NAMES, ...exported.filter((keyword) => UNIT_KEYWORD_NAMES.includes(keyword))]),
     weapon: uniqueSorted([...WEAPON_KEYWORD_NAMES, ...exported.filter((keyword) => WEAPON_KEYWORD_NAMES.includes(keyword))]),
+    specialRules: uniqueSorted(leaderRules.map((rule) => rule.RuleName)),
   };
 }
 
@@ -351,6 +355,7 @@ function readProfile() {
     ManualAdjustment: num(el("manualAdjustment").value),
     weapons: activeWeapons,
     modelKeywords,
+    specialRules: [...selectedKeywords.specialRules],
     weaponKeywords,
     allKeywords,
     keywordSet: new Set(allKeywords.map(normalizeKey)),
@@ -624,13 +629,17 @@ function populateControls(meta) {
   el("sv").value = "5";
   model.keywordCatalog = keywordCatalog;
   setupKeywordPicker("modelKeywordPicker", "model", keywordCatalog.unit);
+  setupKeywordPicker("specialRulePicker", "specialRules", keywordCatalog.specialRules);
   initializeWeapons(keywordCatalog.weapon);
 }
 
 function setupKeywordPicker(containerId, key, keywords) {
   const container = el(containerId);
   container.dataset.key = key;
-  const searchLabel = key === "model" ? "Search unit keywords" : "Search keywords";
+  const searchLabel =
+    key === "model" ? "Search unit keywords" :
+    key === "specialRules" ? "Search special rules" :
+    "Search keywords";
   container.innerHTML = `
     <div class="selected-keywords" aria-live="polite"></div>
     <input class="keyword-search" type="search" autocomplete="off" placeholder="${escapeHtml(searchLabel)}" aria-label="${escapeHtml(searchLabel)}" />
@@ -829,7 +838,9 @@ function enforceNumberLimits() {
 function resetForm() {
   form.reset();
   selectedKeywords.model = [];
+  selectedKeywords.specialRules = [];
   renderKeywordPicker(el("modelKeywordPicker"), "model", model.keywordCatalog?.unit || []);
+  renderKeywordPicker(el("specialRulePicker"), "specialRules", model.keywordCatalog?.specialRules || []);
   weaponProfiles = [makeWeaponProfile()];
   renderWeaponRows(model.keywordCatalog?.weapon || []);
   el("qty").value = 1;
