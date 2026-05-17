@@ -11,10 +11,13 @@ const pointsEl = el("points");
 const continuousEl = el("continuous");
 const nearestEl = el("nearest");
 const roundProbabilityEl = el("roundProbability");
-const summaryEl = el("unit-summary");
 const form = el("unit-form");
 
 let model = null;
+const selectedKeywords = {
+  model: [],
+  weapon: [],
+};
 
 function parseCsv(text) {
   const rows = [];
@@ -83,6 +86,20 @@ function splitKeywords(value) {
     .filter(Boolean);
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function selectOptions(values, labels = null) {
+  return values
+    .map((value, index) => `<option value="${escapeHtml(value)}">${escapeHtml(labels ? labels[index] : value)}</option>`)
+    .join("");
+}
+
 function hasKeyword(profile, keyword) {
   return profile.keywordSet.has(normalizeKey(keyword));
 }
@@ -119,13 +136,14 @@ function processPack(rows) {
 }
 
 function readProfile() {
-  const modelKeywords = splitKeywords(el("modelKeywords").value);
-  const weaponKeywords = splitKeywords(el("weaponKeywords").value);
+  const modelKeywords = [...selectedKeywords.model];
+  const weaponKeywords = [...selectedKeywords.weapon];
   const allKeywords = [...modelKeywords, ...weaponKeywords];
   return {
     unitName: el("unitName").value.trim(),
     role: el("role").value,
     baseSize: el("baseSize").value,
+    Qty: num(el("qty").value, 1),
     VP: num(el("vp").value),
     SP_Advance: num(el("spAdvance").value),
     SP_Sprint: num(el("spSprint").value),
@@ -392,35 +410,118 @@ function calculate(profile) {
 
 function updateResult() {
   if (!model) return;
+  enforceNumberLimits();
   const profile = readProfile();
   if (!profile.role || !profile.baseSize) return;
   const result = calculate(profile);
   pointsEl.value = result.final;
+  pointsEl.textContent = result.final;
   continuousEl.textContent = result.continuous.toFixed(2);
   nearestEl.textContent = result.nearest.toString();
   roundProbabilityEl.textContent = `${Math.round(result.roundProbability * 100)}%`;
-  const label = profile.unitName || "Custom unit";
-  summaryEl.textContent = `${label} · ${profile.role} · ${profile.baseSize}`;
 }
 
 function populateControls(meta) {
   const roles = meta.categorical_values.Role || [];
   const baseSizes = meta.categorical_values.BaseSize || [];
-  el("role").innerHTML = roles.map((role) => `<option value="${role}">${role}</option>`).join("");
-  el("baseSize").innerHTML = baseSizes.map((size) => `<option value="${size}">${size}</option>`).join("");
+  el("role").innerHTML = selectOptions(roles);
+  el("baseSize").innerHTML = selectOptions(baseSizes);
+  el("ra").innerHTML = selectOptions([0, 3, 4, 5, 6], ["-", "3+", "4+", "5+", "6+"]);
+  el("fi").innerHTML = selectOptions([0, 3, 4, 5, 6, 7], ["-", "3+", "4+", "5+", "6+", "7+"]);
+  el("sv").innerHTML = selectOptions([3, 4, 5, 6, 7], ["3+", "4+", "5+", "6+", "7+"]);
   if (roles.includes("Troop")) el("role").value = "Troop";
   if (baseSizes.includes("25mm")) el("baseSize").value = "25mm";
+  el("ra").value = "5";
+  el("fi").value = "5";
+  el("sv").value = "5";
+  setupKeywordPicker("modelKeywordPicker", "model", meta.keyword_tags || []);
+  setupKeywordPicker("weaponKeywordPicker", "weapon", meta.keyword_tags || []);
+}
 
-  const keywordList = el("keyword-list");
-  keywordList.innerHTML = (meta.keyword_tags || [])
-    .map((keyword) => `<option value="${keyword}"></option>`)
+function setupKeywordPicker(containerId, key, keywords) {
+  const container = el(containerId);
+  container.dataset.key = key;
+  container.innerHTML = `
+    <div class="selected-keywords" aria-live="polite"></div>
+    <input class="keyword-search" type="search" autocomplete="off" placeholder="Search keywords" aria-label="Search keywords" />
+    <div class="keyword-options" hidden></div>
+  `;
+  const search = container.querySelector(".keyword-search");
+  const options = container.querySelector(".keyword-options");
+
+  search.addEventListener("focus", () => renderKeywordOptions(container, key, keywords, true));
+  search.addEventListener("input", () => renderKeywordOptions(container, key, keywords, true));
+  options.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-keyword]");
+    if (!button) return;
+    selectedKeywords[key].push(button.dataset.keyword);
+    search.value = "";
+    renderKeywordPicker(container, key, keywords);
+    updateResult();
+    search.focus();
+  });
+
+  renderKeywordPicker(container, key, keywords);
+}
+
+function renderKeywordPicker(container, key, keywords) {
+  const selected = container.querySelector(".selected-keywords");
+  selected.innerHTML = selectedKeywords[key].length
+    ? selectedKeywords[key]
+        .map((keyword, index) => `
+          <span class="keyword-chip">
+            ${escapeHtml(keyword)}
+            <button type="button" aria-label="Remove ${escapeHtml(keyword)}" data-remove-index="${index}">x</button>
+          </span>
+        `)
+        .join("")
+    : `<span class="keyword-placeholder">No keywords selected</span>`;
+
+  selected.querySelectorAll("[data-remove-index]").forEach((button) => {
+    button.addEventListener("click", () => {
+      selectedKeywords[key].splice(Number(button.dataset.removeIndex), 1);
+      renderKeywordPicker(container, key, keywords);
+      updateResult();
+    });
+  });
+  renderKeywordOptions(container, key, keywords, false);
+}
+
+function renderKeywordOptions(container, key, keywords, show) {
+  const search = container.querySelector(".keyword-search");
+  const options = container.querySelector(".keyword-options");
+  const query = normalizeKey(search.value);
+  const selected = new Set(selectedKeywords[key].map(normalizeKey));
+  const matches = keywords
+    .filter((keyword) => !selected.has(normalizeKey(keyword)))
+    .filter((keyword) => !query || normalizeKey(keyword).includes(query))
+    .slice(0, 14);
+  options.innerHTML = matches
+    .map((keyword) => `<button class="keyword-option" type="button" data-keyword="${escapeHtml(keyword)}">${escapeHtml(keyword)}</button>`)
     .join("");
-  el("modelKeywords").setAttribute("list", "keyword-list");
-  el("weaponKeywords").setAttribute("list", "keyword-list");
+  options.hidden = !show || matches.length === 0;
+}
+
+function enforceNumberLimits() {
+  form.querySelectorAll('input[type="number"]').forEach((input) => {
+    if (input.value === "") return;
+    const value = Number(input.value);
+    if (!Number.isFinite(value)) return;
+    const min = input.min === "" ? -Infinity : Number(input.min);
+    const max = input.max === "" ? Infinity : Number(input.max);
+    if (value < min) input.value = String(min);
+    if (value > max) input.value = String(max);
+  });
 }
 
 function resetForm() {
   form.reset();
+  selectedKeywords.model = [];
+  selectedKeywords.weapon = [];
+  document.querySelectorAll(".keyword-picker").forEach((container) => {
+    renderKeywordPicker(container, container.dataset.key, model.meta.keyword_tags || []);
+  });
+  el("qty").value = 1;
   el("vp").value = 1;
   el("spAdvance").value = 1;
   el("spSprint").value = 2;
@@ -431,8 +532,14 @@ function resetForm() {
   el("hp").value = 1;
   el("sz").value = 1;
   el("maxRange").value = 6;
+  el("maxAP").value = 0;
   el("weaponCount").value = 1;
   el("rangedWeaponCount").value = 1;
+  el("strongRangedWeaponCount").value = 0;
+  el("hasMelee").checked = false;
+  el("tacticianValue").value = 0;
+  el("reconScore").value = 0;
+  el("commandValue").value = 0;
   el("manualAdjustment").value = 0;
   updateResult();
 }
@@ -465,5 +572,14 @@ loadModel().catch((error) => {
   console.error(error);
   statusEl.value = "Model failed to load";
   pointsEl.value = "!";
-  summaryEl.textContent = "The model files could not be loaded.";
+  pointsEl.textContent = "!";
+});
+
+document.addEventListener("click", (event) => {
+  document.querySelectorAll(".keyword-picker").forEach((picker) => {
+    if (!picker.contains(event.target)) {
+      const options = picker.querySelector(".keyword-options");
+      if (options) options.hidden = true;
+    }
+  });
 });
