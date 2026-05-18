@@ -153,6 +153,8 @@ const RANGE_OPTIONS = [
   })),
 ];
 
+const BASE_SIZE_OPTIONS = ["25mm", "40mm", "50mm", "60mm"];
+
 function parseCsv(text) {
   const rows = [];
   let row = [];
@@ -666,7 +668,7 @@ function updateResult() {
 
 function populateControls(meta) {
   const roles = meta.categorical_values.Role || [];
-  const baseSizes = meta.categorical_values.BaseSize || [];
+  const baseSizes = meta.categorical_values.BaseSize || BASE_SIZE_OPTIONS;
   const keywordCatalog = buildKeywordCatalog(meta);
   el("role").innerHTML = selectOptions(roles);
   el("baseSize").innerHTML = selectOptions(baseSizes);
