@@ -268,25 +268,25 @@
     "ra_plus": 1.5,
     "fi_plus": 1.5,
     "sv_plus": 1.5,
-    "ar_plus": 2,
-    "hp_plus": 2,
-    "sp_plus": 1,
-    "leader_rule": -3,
-    "cc_ap1": 2,
-    "cc_ap1_weak_fi": 1,
-    "cc_ap2": 3,
-    "r6_ap0": 2,
-    "ap_plus": 1,
-    "range_plus": 1
+    "ar_plus": 2.0,
+    "hp_plus": 2.0,
+    "sp_plus": 1.0,
+    "leader_rule": -3.0,
+    "cc_ap1": 2.0,
+    "cc_ap1_weak_fi": 1.0,
+    "cc_ap2": 3.0,
+    "r6_ap0": 2.0,
+    "ap_plus": 1.0,
+    "range_plus": 1.0
   },
   "role_cost_floors": {
-    "Troop": 6,
-    "Troop Specialist": 7,
-    "Specialist Troop": 7,
-    "Specialist": 7,
-    "Legend": 8,
-    "Leader": 14,
-    "Support": 22
+    "Troop": 6.0,
+    "Troop Specialist": 7.0,
+    "Specialist Troop": 7.0,
+    "Specialist": 7.0,
+    "Legend": 8.0,
+    "Leader": 14.0,
+    "Support": 22.0
   },
   "multiplier": {
     "intercept": -0.007694580390249983,
@@ -299,7 +299,7 @@
   },
   "vp": {
     "intercept": 1.9619687627129405,
-    "min_vp": 0,
-    "max_vp": 5
+    "min_vp": 0.0,
+    "max_vp": 5.0
   }
 }
