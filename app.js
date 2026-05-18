@@ -325,12 +325,13 @@ function processPack(rows) {
 
 function readProfile() {
   const modelKeywords = [...selectedKeywords.model];
+  const specialRuleKeywords = [...selectedKeywords.specialRules];
   const activeWeapons = weaponProfiles.filter((weapon) => weapon.name.trim() || weapon.range === "CC" || num(weapon.range) > 0 || num(weapon.ap) > 0 || weapon.keywords.length);
   const weaponKeywords = activeWeapons.flatMap((weapon) => weapon.keywords);
   const rangedWeapons = activeWeapons.filter(isWeaponRanged);
   const strongRangedWeapons = rangedWeapons.filter(isStrongRangedWeapon);
   const meleeWeapons = activeWeapons.filter((weapon) => weapon.range === "CC");
-  const allKeywords = [...modelKeywords, ...weaponKeywords];
+  const allKeywords = [...modelKeywords, ...weaponKeywords, ...specialRuleKeywords];
   return {
     unitName: el("unitName").value.trim(),
     role: el("role").value,
@@ -356,7 +357,7 @@ function readProfile() {
     ManualAdjustment: num(el("manualAdjustment").value),
     weapons: activeWeapons,
     modelKeywords,
-    specialRules: [...selectedKeywords.specialRules],
+    specialRules: specialRuleKeywords,
     weaponKeywords,
     allKeywords,
     keywordSet: new Set(allKeywords.map(normalizeKey)),
@@ -401,7 +402,7 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   const hasCommunicationsRelay = hasKeyword(profile, "Communications Relay");
   const hasCombatTeamTraining = hasKeyword(profile, "Combat Team Training");
   const hasCommandKeyword = hasTactician || profile.CommandValue > 0 || hasKeyword(profile, "Command");
-  const hasSpecialOrder = hasKeyword(profile, "Special Order");
+  const hasSpecialOrder = profile.specialRules.length > 0 || hasKeyword(profile, "Special Order");
   const hasFireControl = hasKeyword(profile, "Fire Control");
   const hasRampage = hasKeyword(profile, "Rampage");
   const supportAura = hasTactician || hasAnyKeyword(profile, [
