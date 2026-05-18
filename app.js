@@ -865,7 +865,7 @@ function renderWeaponKeywordOptions(container, weapon, keywords, show) {
 function updateSpecialRulesVisibility() {
   const section = el("specialRulesSection");
   if (!section) return;
-  section.hidden = el("role").value !== "Leader";
+  section.hidden = !["Leader", "Legend"].includes(el("role").value);
 }
 
 function enforceNumberLimits() {
