@@ -16,6 +16,10 @@ const continuousEl = el("continuous");
 const nearestEl = el("nearest");
 const roundProbabilityEl = el("roundProbability");
 const form = el("unit-form");
+const armyNameEl = el("armyName");
+const armyTotalEl = el("armyTotal");
+const armyListEl = el("armyList");
+const importArmyFileEl = el("importArmyFile");
 
 let model = null;
 const selectedKeywords = {
@@ -24,6 +28,8 @@ const selectedKeywords = {
 };
 let weaponProfiles = [];
 let weaponIdCounter = 0;
+let armyUnits = [];
+let armyUnitIdCounter = 0;
 
 const UNIT_KEYWORD_NAMES = [
   "Aerial Deployment",
@@ -343,7 +349,8 @@ function processPack(rows) {
 
 function readProfile() {
   const modelKeywords = [...selectedKeywords.model];
-  const specialRuleKeywords = [...selectedKeywords.specialRules];
+  const role = el("role").value;
+  const specialRuleKeywords = ["Leader", "Legend"].includes(role) ? [...selectedKeywords.specialRules] : [];
   const activeWeapons = weaponProfiles.filter((weapon) => weapon.name.trim() || weapon.range === "CC" || num(weapon.ap) > 0 || weapon.keywords.length);
   const weaponKeywords = activeWeapons.flatMap((weapon) => weapon.keywords);
   const rangedWeapons = activeWeapons.filter(isWeaponRanged);
@@ -357,7 +364,7 @@ function readProfile() {
     + (allKeywords.some((keyword) => normalizeKey(keyword) === "combat team training") ? 1 : 0);
   return {
     unitName: el("unitName").value.trim(),
-    role: el("role").value,
+    role,
     baseSize: el("baseSize").value,
     Qty: num(el("qty").value, 1),
     SP_Advance: num(el("spAdvance").value),
@@ -378,6 +385,7 @@ function readProfile() {
     ReconScore: reconValue,
     CommandValue: commandValue,
     ManualAdjustment: num(el("manualAdjustment").value),
+    notes: el("notes").value.trim(),
     weapons: activeWeapons,
     modelKeywords,
     specialRules: specialRuleKeywords,
@@ -613,7 +621,8 @@ function calculateVp(profile, result) {
   const rawVp = contribution(model.vp, vpNumeric(profile, result), active, model.meta.vp.intercept);
   const minVp = model.meta.vp.min_vp ?? 0;
   const maxVp = model.meta.vp.max_vp ?? 5;
-  return clamp(Math.round(rawVp), minVp, maxVp);
+  const roleMinVp = profile.role === "Troop" ? Math.max(1, minVp) : minVp;
+  return clamp(Math.round(rawVp), roleMinVp, maxVp);
 }
 
 function calculate(profile) {
@@ -663,6 +672,152 @@ function updateResult() {
   continuousEl.textContent = result.continuous.toFixed(2);
   nearestEl.textContent = result.nearest.toString();
   roundProbabilityEl.textContent = `${Math.round(result.roundProbability * 100)}%`;
+}
+
+function currentUnitRecord() {
+  const profile = readProfile();
+  const result = calculate(profile);
+  return {
+    id: `unit-${Date.now()}-${armyUnitIdCounter += 1}`,
+    profile: serializeProfile(profile),
+    result: {
+      final: result.final,
+      vp: result.vp,
+      continuous: Number(result.continuous.toFixed(3)),
+    },
+  };
+}
+
+function serializeProfile(profile) {
+  return {
+    unitName: profile.unitName || "Custom unit",
+    role: profile.role,
+    qty: profile.Qty,
+    baseSize: profile.baseSize,
+    SP_Advance: profile.SP_Advance,
+    SP_Sprint: profile.SP_Sprint,
+    RA: profile.RA,
+    FI: profile.FI,
+    SV: profile.SV,
+    AR: profile.AR,
+    HP: profile.HP,
+    SZ: profile.SZ,
+    modelKeywords: [...profile.modelKeywords],
+    specialRules: [...selectedKeywords.specialRules],
+    weapons: profile.weapons.map((weapon) => ({
+      name: weapon.name,
+      range: weapon.range,
+      ap: weapon.ap,
+      keywords: [...weapon.keywords],
+    })),
+    manualAdjustment: profile.ManualAdjustment,
+    notes: profile.notes,
+  };
+}
+
+function unitTotal(unit) {
+  return num(unit.profile.qty, 1) * num(unit.result.final);
+}
+
+function renderArmyList() {
+  const total = armyUnits.reduce((sum, unit) => sum + unitTotal(unit), 0);
+  armyTotalEl.value = total;
+  armyTotalEl.textContent = total.toString();
+
+  if (!armyUnits.length) {
+    armyListEl.innerHTML = `<div class="army-empty">No units added yet.</div>`;
+    return;
+  }
+
+  armyListEl.innerHTML = armyUnits
+    .map((unit) => `
+      <div class="army-row" data-unit-id="${escapeHtml(unit.id)}">
+        <div>Qty ${escapeHtml(unit.profile.qty)}</div>
+        <div>
+          <strong>${escapeHtml(unit.profile.unitName)}</strong>
+          <div>${escapeHtml(unit.profile.modelKeywords.join(", ") || "No unit keywords")}</div>
+        </div>
+        <div class="army-role">${escapeHtml(unit.profile.role)}</div>
+        <div class="army-vp">${escapeHtml(unit.result.vp)} VP</div>
+        <div>${escapeHtml(unit.result.final)} pts each<br><strong>${escapeHtml(unitTotal(unit))} pts</strong></div>
+        <div class="army-row-actions">
+          <button type="button" data-action="edit">Edit</button>
+          <button type="button" data-action="remove">Remove</button>
+        </div>
+      </div>
+    `)
+    .join("");
+}
+
+function addCurrentUnitToArmy() {
+  if (!model) return;
+  armyUnits.push(currentUnitRecord());
+  renderArmyList();
+}
+
+function loadUnitIntoForm(unit) {
+  const profile = unit.profile;
+  el("unitName").value = profile.unitName || "";
+  el("role").value = profile.role || "Troop";
+  el("qty").value = profile.qty || 1;
+  el("baseSize").value = profile.baseSize || "25mm";
+  el("spAdvance").value = profile.SP_Advance ?? 1;
+  el("spSprint").value = profile.SP_Sprint ?? 2;
+  el("ra").value = profile.RA ?? 5;
+  el("fi").value = profile.FI ?? 5;
+  el("sv").value = profile.SV ?? 5;
+  el("ar").value = profile.AR ?? 0;
+  el("hp").value = profile.HP ?? 1;
+  el("sz").value = profile.SZ ?? 1;
+  el("manualAdjustment").value = profile.manualAdjustment ?? 0;
+  el("notes").value = profile.notes || "";
+  selectedKeywords.model = [...(profile.modelKeywords || [])];
+  selectedKeywords.specialRules = [...(profile.specialRules || [])];
+  weaponProfiles = (profile.weapons || []).map((weapon) => ({
+    id: `weapon-${weaponIdCounter += 1}`,
+    name: weapon.name || "",
+    range: weapon.range || "6",
+    ap: num(weapon.ap),
+    keywords: [...(weapon.keywords || [])],
+  }));
+  if (!weaponProfiles.length) weaponProfiles = [makeWeaponProfile()];
+  renderKeywordPicker(el("modelKeywordPicker"), "model", model.keywordCatalog?.unit || []);
+  renderKeywordPicker(el("specialRulePicker"), "specialRules", model.keywordCatalog?.specialRules || []);
+  renderWeaponRows(model.keywordCatalog?.weapon || []);
+  updateSpecialRulesVisibility();
+  updateResult();
+}
+
+function downloadText(filename, text, type = "application/json") {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function exportArmyTemplate() {
+  const data = {
+    app: "deadzone-custom-unit-builder",
+    version: 1,
+    armyName: armyNameEl.value.trim(),
+    units: armyUnits,
+  };
+  const safeName = (data.armyName || "deadzone-army").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  downloadText(`${safeName || "deadzone-army"}.json`, JSON.stringify(data, null, 2));
+}
+
+async function importArmyTemplate(file) {
+  if (!file) return;
+  const data = JSON.parse(await file.text());
+  armyNameEl.value = data.armyName || "";
+  armyUnits = Array.isArray(data.units) ? data.units : [];
+  renderArmyList();
+  importArmyFileEl.value = "";
 }
 
 function populateControls(meta) {
@@ -889,7 +1044,10 @@ function renderWeaponKeywordOptions(container, weapon, keywords, show) {
 function updateSpecialRulesVisibility() {
   const section = el("specialRulesSection");
   if (!section) return;
-  section.hidden = !["Leader", "Legend"].includes(el("role").value);
+  const allowed = ["Leader", "Legend"].includes(el("role").value);
+  section.classList.toggle("special-rules-inactive", !allowed);
+  const search = section.querySelector(".keyword-search");
+  if (search) search.disabled = !allowed;
 }
 
 function enforceNumberLimits() {
@@ -945,6 +1103,7 @@ async function loadModel() {
   };
   populateControls(meta);
   statusEl.value = "Ready";
+  renderArmyList();
   updateResult();
 }
 
@@ -957,6 +1116,32 @@ el("addWeapon").addEventListener("click", () => {
   weaponProfiles.push(makeWeaponProfile());
   renderWeaponRows(model.keywordCatalog?.weapon || []);
   updateResult();
+});
+el("addUnitToArmy").addEventListener("click", addCurrentUnitToArmy);
+el("clearArmy").addEventListener("click", () => {
+  armyUnits = [];
+  renderArmyList();
+});
+el("printArmy").addEventListener("click", () => window.print());
+el("exportArmy").addEventListener("click", exportArmyTemplate);
+el("importArmyButton").addEventListener("click", () => importArmyFileEl.click());
+importArmyFileEl.addEventListener("change", () => importArmyTemplate(importArmyFileEl.files?.[0]).catch((error) => {
+  console.error(error);
+  statusEl.value = "Template failed to load";
+}));
+armyListEl.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-action]");
+  const row = event.target.closest(".army-row");
+  if (!button || !row) return;
+  const unit = armyUnits.find((entry) => entry.id === row.dataset.unitId);
+  if (!unit) return;
+  if (button.dataset.action === "remove") {
+    armyUnits = armyUnits.filter((entry) => entry.id !== unit.id);
+    renderArmyList();
+  }
+  if (button.dataset.action === "edit") {
+    loadUnitIntoForm(unit);
+  }
 });
 
 loadModel().catch((error) => {

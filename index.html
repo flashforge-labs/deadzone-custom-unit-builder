@@ -16,6 +16,28 @@
         <output id="status" class="status">Loading model...</output>
       </header>
 
+      <section class="army-panel" aria-label="Army list">
+        <div class="army-head">
+          <label class="army-name-field">
+            <span>Army</span>
+            <input id="armyName" autocomplete="off" placeholder="Custom army" />
+          </label>
+          <div class="army-total">
+            <span>Total</span>
+            <output id="armyTotal">0</output>
+          </div>
+          <div class="army-actions">
+            <button id="addUnitToArmy" type="button">Add Unit</button>
+            <button id="printArmy" type="button">Print / PDF</button>
+            <button id="exportArmy" type="button">Save Template</button>
+            <button id="importArmyButton" type="button">Load Template</button>
+            <button id="clearArmy" type="button">Clear</button>
+            <input id="importArmyFile" type="file" accept="application/json,.json" hidden />
+          </div>
+        </div>
+        <div id="armyList" class="army-list" aria-live="polite"></div>
+      </section>
+
       <form id="unit-form" class="unit-card" aria-label="Custom unit builder">
         <section class="card-head">
           <label class="unit-name-field">
@@ -79,8 +101,11 @@
           <div id="modelKeywordPicker" class="keyword-picker"></div>
         </section>
 
-        <section id="specialRulesSection" class="keyword-line" aria-label="Special rules" hidden>
-          <span class="line-label">Special Rules</span>
+        <section id="specialRulesSection" class="keyword-line" aria-label="Special rules">
+          <div>
+            <span class="line-label">Special Rules</span>
+            <span class="line-note">Leaders and Legends only.</span>
+          </div>
           <div id="specialRulePicker" class="keyword-picker"></div>
         </section>
 
@@ -123,6 +148,30 @@
           </dl>
         </details>
       </form>
+
+      <section class="guide-panel" aria-label="Guide and FAQ">
+        <details>
+          <summary>Guide / FAQ</summary>
+          <div class="guide-grid">
+            <div>
+              <h2>What This Is</h2>
+              <p>This is an unofficial custom-unit points estimator. It uses derived private calibration weights, not official profiles.</p>
+            </div>
+            <div>
+              <h2>Using The Builder</h2>
+              <p>Build one unit profile, add it to the army list, then repeat. The total at the top uses unit cost multiplied by quantity.</p>
+            </div>
+            <div>
+              <h2>Saving Lists</h2>
+              <p>Save Template downloads a JSON file that can be loaded again later. Print / PDF opens the browser print dialog.</p>
+            </div>
+            <div>
+              <h2>Special Rules</h2>
+              <p>Special rules are intended for Leaders and Legends. For other roles they stay visible but do not affect the estimate.</p>
+            </div>
+          </div>
+        </details>
+      </section>
     </main>
 
     <script src="app.js" type="module"></script>

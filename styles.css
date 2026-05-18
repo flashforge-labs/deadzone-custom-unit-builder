@@ -26,7 +26,7 @@ body {
 
 .app {
   min-height: 100vh;
-  padding-bottom: 32px;
+  padding-bottom: 24px;
 }
 
 .topbar {
@@ -34,7 +34,7 @@ body {
   justify-content: space-between;
   gap: 18px;
   align-items: center;
-  padding: 16px 22px;
+  padding: 12px 18px;
   color: #fff;
   background: var(--header-dark);
   border-bottom: 4px solid var(--header);
@@ -42,7 +42,7 @@ body {
 
 h1 {
   margin: 0 0 3px;
-  font-size: 24px;
+  font-size: 21px;
   line-height: 1.1;
   letter-spacing: 0;
 }
@@ -60,7 +60,7 @@ p {
 
 .unit-card {
   max-width: 1120px;
-  margin: 24px auto;
+  margin: 14px auto;
   border: 2px solid var(--line);
   border-radius: 8px;
   overflow: visible;
@@ -75,7 +75,7 @@ p {
   grid-template-columns: minmax(220px, 1fr) 180px 80px 112px;
   align-items: end;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   color: #fff;
   background: linear-gradient(180deg, #7d352c, #522019);
 }
@@ -96,7 +96,7 @@ label,
 input,
 select,
 button {
-  min-height: 32px;
+  min-height: 34px;
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 0;
@@ -104,6 +104,28 @@ button {
   color: var(--ink);
   padding: 5px 7px;
   font: inherit;
+}
+
+select,
+input[type="number"] {
+  border: 2px solid #4f5b64;
+  background: linear-gradient(180deg, #ffffff, #eef3f5);
+  cursor: pointer;
+}
+
+input[type="number"] {
+  min-width: 56px;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  width: 22px;
+  min-height: 28px;
+  opacity: 1;
+}
+
+button {
+  cursor: pointer;
 }
 
 input:focus,
@@ -124,7 +146,7 @@ button:focus,
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 8px;
-  min-height: 45px;
+  min-height: 40px;
   justify-self: stretch;
   padding: 4px 8px;
   background: rgba(0, 0, 0, 0.18);
@@ -138,7 +160,7 @@ button:focus,
 
 #points {
   justify-self: end;
-  font-size: 28px;
+  font-size: 25px;
   line-height: 1;
   font-weight: 900;
 }
@@ -152,7 +174,7 @@ button:focus,
 }
 
 .stat-strip label {
-  min-height: 64px;
+  min-height: 54px;
   border-right: 1px solid var(--line);
   align-content: start;
   text-align: center;
@@ -174,7 +196,7 @@ button:focus,
 
 .stat-strip input,
 .stat-strip select {
-  min-height: 34px;
+  min-height: 30px;
   border: 0;
   text-align: center;
   font-weight: 700;
@@ -196,13 +218,21 @@ button:focus,
   grid-template-columns: 150px minmax(0, 1fr);
   align-items: start;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 7px 10px;
   border-bottom: 1px solid var(--line-soft);
 }
 
 .line-label {
   color: #101418;
-  padding-top: 8px;
+  padding-top: 6px;
+}
+
+.line-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .rule-line input {
@@ -218,10 +248,16 @@ button:focus,
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  min-height: 34px;
-  padding: 4px;
-  border: 1px solid var(--line-soft);
+  min-height: 30px;
+  padding: 3px;
+  border: 2px dashed #8c9aa3;
   background: rgba(255, 255, 255, 0.78);
+}
+
+.selected-keywords:focus-within,
+.keyword-picker:hover .selected-keywords {
+  border-color: var(--accent);
+  background: #fff;
 }
 
 .keyword-chip {
@@ -247,8 +283,19 @@ button:focus,
 }
 
 .keyword-search {
-  margin-top: 6px;
-  border: 1px solid var(--line-soft);
+  margin-top: 4px;
+  border: 2px solid #4f5b64;
+  background: #fff;
+}
+
+.special-rules-inactive .selected-keywords,
+.special-rules-inactive .keyword-search {
+  opacity: 0.58;
+  background: #eef1f3;
+}
+
+.special-rules-inactive .keyword-search {
+  cursor: not-allowed;
 }
 
 .keyword-options {
@@ -313,8 +360,8 @@ button:focus,
 
 .weapons-root {
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   border-top: 1px solid var(--line);
   background: rgba(255, 255, 255, 0.58);
 }
@@ -326,11 +373,11 @@ button:focus,
 
 .weapon-grid {
   display: grid;
-  grid-template-columns: minmax(160px, 1.4fr) 110px 90px minmax(280px, 2fr) 44px;
+  grid-template-columns: minmax(150px, 1.4fr) 100px 80px minmax(260px, 2fr) 42px;
 }
 
 .weapon-grid label {
-  min-height: 72px;
+  min-height: 64px;
   border-right: 1px solid var(--line);
   text-align: center;
 }
@@ -352,7 +399,7 @@ button:focus,
 }
 
 .weapon-grid .selected-keywords {
-  min-height: 40px;
+  min-height: 34px;
 }
 
 .weapon-grid .keyword-search {
@@ -374,7 +421,7 @@ button:focus,
 
 .remove-weapon-button {
   height: 100%;
-  min-height: 72px;
+  min-height: 64px;
   border: 0;
   background: #f4d8d4;
   color: #5e1d14;
@@ -392,7 +439,7 @@ button:focus,
   display: grid;
   grid-template-columns: repeat(2, minmax(120px, 220px));
   gap: 10px;
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 }
 
 .footer-box {
@@ -419,7 +466,7 @@ button:focus,
   display: grid;
   grid-template-columns: minmax(120px, 180px);
   gap: 10px;
-  padding: 12px;
+  padding: 10px;
   border-top: 1px solid var(--line-soft);
 }
 
@@ -430,7 +477,134 @@ button:focus,
 }
 
 .advanced {
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
+}
+
+.army-panel,
+.guide-panel {
+  max-width: 1120px;
+  margin: 14px auto;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 10px 22px rgba(10, 20, 28, 0.12);
+}
+
+.army-panel {
+  overflow: hidden;
+}
+
+.army-head {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 120px minmax(420px, auto);
+  gap: 10px;
+  align-items: end;
+  padding: 10px;
+  background: #111820;
+}
+
+.army-head label,
+.army-total {
+  color: #edf3f4;
+}
+
+.army-total {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.army-total output {
+  display: grid;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: right;
+}
+
+.army-actions {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(86px, 1fr));
+  gap: 6px;
+}
+
+.army-actions button,
+.extras button {
+  border: 1px solid #33424d;
+  background: #fff;
+  font-weight: 800;
+}
+
+.army-list {
+  display: grid;
+  gap: 0;
+}
+
+.army-empty {
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.army-row {
+  display: grid;
+  grid-template-columns: 70px minmax(160px, 1fr) 110px 80px 100px 150px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+}
+
+.army-row strong {
+  text-transform: uppercase;
+}
+
+.army-row .army-row-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.army-row button {
+  min-height: 28px;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.guide-panel {
+  padding: 10px 12px;
+}
+
+.guide-panel summary {
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.guide-grid h2 {
+  margin: 0 0 4px;
+  font-size: 15px;
+}
+
+.guide-grid p {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 summary {
@@ -459,6 +633,28 @@ dd {
 @media (max-width: 980px) {
   .unit-card {
     margin: 16px;
+  }
+
+  .army-panel,
+  .guide-panel {
+    margin: 16px;
+  }
+
+  .army-head {
+    grid-template-columns: 1fr 120px;
+  }
+
+  .army-actions {
+    grid-column: 1 / -1;
+  }
+
+  .army-row {
+    grid-template-columns: 60px 1fr 90px;
+  }
+
+  .army-row .army-role,
+  .army-row .army-vp {
+    display: none;
   }
 
   .card-head {
@@ -500,5 +696,59 @@ dd {
 
   .weapon-footer {
     grid-template-columns: 1fr;
+  }
+
+  .army-head,
+  .guide-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .army-actions,
+  .army-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .topbar,
+  .unit-card,
+  .guide-panel,
+  .army-actions,
+  .status {
+    display: none !important;
+  }
+
+  .army-panel {
+    box-shadow: none;
+    border: 1px solid #000;
+    margin: 0;
+    max-width: none;
+  }
+
+  .army-head {
+    grid-template-columns: 1fr 120px;
+    color: #000;
+    background: #fff;
+    border-bottom: 2px solid #000;
+  }
+
+  .army-head input,
+  .army-total output {
+    border: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .army-row {
+    grid-template-columns: 70px 1fr 110px 80px 90px;
+    break-inside: avoid;
+  }
+
+  .army-row-actions {
+    display: none !important;
   }
 }
