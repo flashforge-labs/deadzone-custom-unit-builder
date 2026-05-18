@@ -296,8 +296,21 @@ function hasKeyword(profile, keyword) {
   return profile.keywordSet.has(normalizeKey(keyword));
 }
 
+function keywordBase(value) {
+  return normalizeKey(value).replace(/\(\s*\d+\+?\s*\)/g, "").trim();
+}
+
+function hasKeywordBase(profile, keyword) {
+  const wanted = keywordBase(keyword);
+  return profile.allKeywords.some((value) => keywordBase(value) === wanted);
+}
+
 function hasAnyKeyword(profile, keywords) {
   return keywords.some((keyword) => hasKeyword(profile, keyword));
+}
+
+function hasAnyKeywordBase(profile, keywords) {
+  return keywords.some((keyword) => hasKeywordBase(profile, keyword));
 }
 
 function scoreStat(value) {
@@ -400,13 +413,13 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   const hasRanged = profile.MaxRange > 0 || profile.RangedWeaponCount > 0;
   const hasMelee = profile.HasMeleeInput;
   const hasHeavy = hasKeyword(profile, "Heavy");
-  const hasBlastOrFrag = hasAnyKeyword(profile, ["Blast", "Frag", "Frag(3)", "Explosive"]);
+  const hasBlastOrFrag = hasAnyKeywordBase(profile, ["Blast", "Frag"]);
   const hasIndirect = hasKeyword(profile, "Indirect");
   const hasSuppression = hasKeyword(profile, "Suppression");
-  const hasSniper = hasKeyword(profile, "Sniper");
+  const hasSniper = hasKeywordBase(profile, "Sniper");
   const hasRapidFire = hasKeyword(profile, "Rapid Fire");
-  const hasWeightOfFire = hasKeyword(profile, "Weight of Fire(1)");
-  const hasFlight = hasAnyKeyword(profile, ["Flight", "Aerial Deployment"]);
+  const hasWeightOfFire = hasKeywordBase(profile, "Weight of Fire");
+  const hasFlight = hasKeyword(profile, "Flight");
   const hasTactician = hasKeyword(profile, "Tactician") || profile.TacticianValue > 0;
   const hasCommunicationsRelay = hasKeyword(profile, "Communications Relay");
   const hasCombatTeamTraining = hasKeyword(profile, "Combat Team Training");
@@ -414,7 +427,7 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   const hasSpecialOrder = profile.specialRules.length > 0 || hasKeyword(profile, "Special Order");
   const hasFireControl = hasKeyword(profile, "Fire Control");
   const hasRampage = hasKeyword(profile, "Rampage");
-  const supportAura = hasTactician || hasAnyKeyword(profile, [
+  const supportAura = hasTactician || hasAnyKeywordBase(profile, [
     "Medic",
     "Engineer",
     "Communications Relay",
@@ -429,6 +442,7 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   const eliteAllRounder = profile.RA > 0 && profile.RA <= 4 && profile.FI > 0 && profile.FI <= 4 && profile.SV > 0 && profile.SV <= 4 && profile.AR >= 1;
   const duplicateRanged = profile.RangedWeaponCount >= 2;
   const mobility = hasFlight || hasAnyKeyword(profile, ["Agile", "Scout", "Teleport", "Jump Pack", "Bike"]);
+  const objectiveRunner = mobility && profile.SZ <= 2 && !["Leader", "Legend", "Support"].includes(role);
   const dropSuit = hasKeyword(profile, "Drop Suit");
   const deployment = dropSuit || hasAnyKeyword(profile, ["Aerial Deployment", "Scout", "Infiltrate"]);
   const specialist = ["Specialist", "Troop Specialist", "Specialist Troop"].includes(role);
@@ -478,8 +492,8 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   add(mobility, "HasMobilityKeyword");
   add(dropSuit, "HasDropSuit");
   add(deployment, "HasDeploymentTrick");
-  add(mobility && hasRanged, "MobileShooter");
-  add(mobility && hasMelee, "MobileMeleeThreat");
+  add(objectiveRunner && hasRanged, "MobileShooter");
+  add(objectiveRunner && profile.FI > 0 && profile.FI <= 4 && hasMelee, "MobileMeleeThreat");
   add(specialist && deployment, "RoleDeploymentSpecialist");
   add(deployment && hasMelee, "DeploymentMeleeThreat");
   add(deployment && hasRanged, "DeploymentShooter");
