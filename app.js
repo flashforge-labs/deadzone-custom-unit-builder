@@ -256,8 +256,7 @@ function keywordValue(keywords, prefix) {
 }
 
 function reconScore(keywords) {
-  const target = keywordValue(keywords, "Recon");
-  return target ? Math.max(0, 7 - target) : 0;
+  return 0;
 }
 
 function makeWeaponProfile() {
