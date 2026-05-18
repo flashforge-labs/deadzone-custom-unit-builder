@@ -552,28 +552,132 @@ button:focus,
   font-size: 13px;
 }
 
-.army-row {
+.army-unit-card {
+  margin: 10px;
+  overflow: hidden;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.84), rgba(238,244,245,0.92)),
+    var(--paper);
+  box-shadow: 0 6px 14px rgba(10, 20, 28, 0.12);
+  font-size: 12px;
+}
+
+.army-unit-head {
   display: grid;
-  grid-template-columns: 70px minmax(160px, 1fr) 110px 80px 100px 150px;
-  gap: 8px;
+  grid-template-columns: minmax(180px, 1fr) auto;
+  gap: 10px;
   align-items: center;
-  padding: 8px 10px;
-  border-top: 1px solid var(--line-soft);
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
+  padding: 7px 9px;
+  color: #fff;
+  background: linear-gradient(180deg, #7d352c, #522019);
 }
 
-.army-row strong {
+.army-unit-head strong {
   text-transform: uppercase;
+  font-size: 15px;
 }
 
-.army-row .army-row-actions {
+.army-unit-head span {
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.army-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(58px, 1fr));
+  border-bottom: 1px solid var(--line);
+}
+
+.army-stat-strip div {
+  display: grid;
+  grid-template-rows: 24px 28px;
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+
+.army-stat-strip div:last-child {
+  border-right: 0;
+}
+
+.army-stat-strip span {
+  display: grid;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.62);
+  font-weight: 900;
+}
+
+.army-stat-strip strong {
+  display: grid;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.army-keyword-line,
+.army-rule-line {
+  min-height: 28px;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: center;
+  font-style: italic;
+  font-weight: 700;
+}
+
+.army-rule-line {
+  text-align: left;
+  font-style: normal;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.army-weapon-title {
+  padding: 6px 9px;
+  color: #fff;
+  background: #050505;
+  font-weight: 900;
+}
+
+.army-weapon-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.army-weapon-table th,
+.army-weapon-table td {
+  padding: 6px 7px;
+  border: 1px solid var(--line);
+  vertical-align: middle;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.army-weapon-table th {
+  background: rgba(255, 255, 255, 0.62);
+  font-weight: 900;
+  text-align: center;
+}
+
+.army-weapon-table td:nth-child(4),
+.army-weapon-table td:nth-child(5),
+.army-weapon-table td:nth-child(7),
+.army-weapon-table td:nth-child(8) {
+  text-align: center;
+  font-weight: 800;
+}
+
+.army-row-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 5px;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--line-soft);
+  background: rgba(255, 255, 255, 0.64);
 }
 
-.army-row button {
+.army-row-actions button {
   min-height: 28px;
   padding: 3px 6px;
   font-size: 12px;
@@ -648,13 +752,20 @@ dd {
     grid-column: 1 / -1;
   }
 
-  .army-row {
-    grid-template-columns: 60px 1fr 90px;
+  .army-unit-head {
+    grid-template-columns: 1fr;
   }
 
-  .army-row .army-role,
-  .army-row .army-vp {
-    display: none;
+  .army-unit-head span {
+    white-space: normal;
+  }
+
+  .army-stat-strip {
+    grid-template-columns: repeat(4, minmax(58px, 1fr));
+  }
+
+  .army-weapon-table {
+    font-size: 11px;
   }
 
   .card-head {
@@ -703,9 +814,17 @@ dd {
     grid-template-columns: 1fr;
   }
 
-  .army-actions,
-  .army-row {
+  .army-actions {
     grid-template-columns: 1fr;
+  }
+
+  .army-stat-strip {
+    grid-template-columns: repeat(2, minmax(58px, 1fr));
+  }
+
+  .army-weapon-table th,
+  .army-weapon-table td {
+    padding: 5px 4px;
   }
 }
 
@@ -743,9 +862,10 @@ dd {
     color: #000;
   }
 
-  .army-row {
-    grid-template-columns: 70px 1fr 110px 80px 90px;
+  .army-unit-card {
     break-inside: avoid;
+    box-shadow: none;
+    margin: 8px 0;
   }
 
   .army-row-actions {

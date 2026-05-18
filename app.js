@@ -121,6 +121,9 @@ const WEAPON_KEYWORD_NAMES = [
   "Frag(3)",
   "Frag(4)",
   "Frag(5)",
+  "Frenzy(1)",
+  "Frenzy(2)",
+  "Frenzy(3)",
   "Grenade",
   "Grenade(Shield Generator 1)",
   "Heavy",
@@ -134,6 +137,7 @@ const WEAPON_KEYWORD_NAMES = [
   "Knockback",
   "Non-Lethal",
   "One-Use",
+  "Prey",
   "Rapid Fire",
   "Smoke",
   "Smoke(1)",
@@ -315,6 +319,54 @@ function unitTotal(unit) {
   return num(unit.profile.qty, 1) * num(unit.result.final);
 }
 
+function formatSkill(value) {
+  return num(value) > 0 ? `${num(value)}+` : "-";
+}
+
+function formatRange(value) {
+  return value === "CC" || num(value) === 0 ? "CC" : `R${num(value)}`;
+}
+
+function formatAp(value) {
+  return num(value) > 0 ? `AP${num(value)}` : "-";
+}
+
+function keywordText(keywords) {
+  return (keywords || []).length ? keywords.join(", ") : "-";
+}
+
+function renderArmyWeaponRows(unit) {
+  const weapons = unit.profile.weapons || [];
+  if (!weapons.length) {
+    return `
+      <tr>
+        <td>${escapeHtml(unit.profile.unitName)}</td>
+        <td>${escapeHtml(unit.profile.role)}</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+        <td>${escapeHtml(unit.result.vp)}</td>
+        <td>${escapeHtml(unit.result.final)} pts</td>
+      </tr>
+    `;
+  }
+  return weapons
+    .map((weapon, index) => `
+      <tr>
+        ${index === 0 ? `<td rowspan="${escapeHtml(weapons.length)}">${escapeHtml(unit.profile.unitName)}</td>` : ""}
+        ${index === 0 ? `<td rowspan="${escapeHtml(weapons.length)}">${escapeHtml(unit.profile.role)}</td>` : ""}
+        <td>${escapeHtml(weapon.name || `Weapon ${index + 1}`)}</td>
+        <td>${escapeHtml(formatRange(weapon.range))}</td>
+        <td>${escapeHtml(formatAp(weapon.ap))}</td>
+        <td>${escapeHtml(keywordText(weapon.keywords))}</td>
+        ${index === 0 ? `<td rowspan="${escapeHtml(weapons.length)}">${escapeHtml(unit.result.vp)}</td>` : ""}
+        ${index === 0 ? `<td rowspan="${escapeHtml(weapons.length)}">${escapeHtml(unit.result.final)} pts</td>` : ""}
+      </tr>
+    `)
+    .join("");
+}
+
 function renderArmyList() {
   const total = armyUnits.reduce((sum, unit) => sum + unitTotal(unit), 0);
   armyTotalEl.value = total;
@@ -327,20 +379,45 @@ function renderArmyList() {
 
   armyListEl.innerHTML = armyUnits
     .map((unit) => `
-      <div class="army-row" data-unit-id="${escapeHtml(unit.id)}">
-        <div>Qty ${escapeHtml(unit.profile.qty)}</div>
-        <div>
+      <article class="army-unit-card" data-unit-id="${escapeHtml(unit.id)}">
+        <header class="army-unit-head">
           <strong>${escapeHtml(unit.profile.unitName)}</strong>
-          <div>${escapeHtml(unit.profile.modelKeywords.join(", ") || "No unit keywords")}</div>
+          <span>${escapeHtml(unit.profile.role)} · Qty ${escapeHtml(unit.profile.qty)} · Pts ${escapeHtml(unitTotal(unit))}</span>
+        </header>
+        <div class="army-stat-strip">
+          <div><span>SP</span><strong>${escapeHtml(unit.profile.SP_Advance)}-${escapeHtml(unit.profile.SP_Sprint)}</strong></div>
+          <div><span>RA</span><strong>${escapeHtml(formatSkill(unit.profile.RA))}</strong></div>
+          <div><span>FI</span><strong>${escapeHtml(formatSkill(unit.profile.FI))}</strong></div>
+          <div><span>SV</span><strong>${escapeHtml(formatSkill(unit.profile.SV))}</strong></div>
+          <div><span>AR</span><strong>${escapeHtml(unit.profile.AR || "-")}</strong></div>
+          <div><span>HP</span><strong>${escapeHtml(unit.profile.HP)}</strong></div>
+          <div><span>SZ</span><strong>${escapeHtml(unit.profile.SZ)}</strong></div>
+          <div><span>Base</span><strong>${escapeHtml(unit.profile.baseSize)}</strong></div>
         </div>
-        <div class="army-role">${escapeHtml(unit.profile.role)}</div>
-        <div class="army-vp">${escapeHtml(unit.result.vp)} VP</div>
-        <div>${escapeHtml(unit.result.final)} pts each<br><strong>${escapeHtml(unitTotal(unit))} pts</strong></div>
+        <div class="army-keyword-line">${escapeHtml(keywordText(unit.profile.modelKeywords))}</div>
+        ${unit.profile.specialRules?.length ? `<div class="army-rule-line">${escapeHtml(keywordText(unit.profile.specialRules))}</div>` : ""}
+        ${unit.profile.notes ? `<div class="army-rule-line">${escapeHtml(unit.profile.notes)}</div>` : ""}
+        <div class="army-weapon-title">Weapon Stats</div>
+        <table class="army-weapon-table">
+          <thead>
+            <tr>
+              <th>Unit</th>
+              <th>Type</th>
+              <th>Weapon</th>
+              <th>Range</th>
+              <th>AP</th>
+              <th>Keywords</th>
+              <th>VPs</th>
+              <th>Cost</th>
+            </tr>
+          </thead>
+          <tbody>${renderArmyWeaponRows(unit)}</tbody>
+        </table>
         <div class="army-row-actions">
           <button type="button" data-action="edit">Edit</button>
           <button type="button" data-action="remove">Remove</button>
         </div>
-      </div>
+      </article>
     `)
     .join("");
 }
@@ -727,7 +804,7 @@ importArmyFileEl.addEventListener("change", () => importArmyTemplate(importArmyF
 }));
 armyListEl.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-action]");
-  const row = event.target.closest(".army-row");
+  const row = event.target.closest("[data-unit-id]");
   if (!button || !row) return;
   const unit = armyUnits.find((entry) => entry.id === row.dataset.unitId);
   if (!unit) return;
