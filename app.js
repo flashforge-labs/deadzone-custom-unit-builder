@@ -255,6 +255,11 @@ function keywordValue(keywords, prefix) {
   return match ? num(match[1]) : 0;
 }
 
+function reconScore(keywords) {
+  const target = keywordValue(keywords, "Recon");
+  return target ? Math.max(0, 7 - target) : 0;
+}
+
 function makeWeaponProfile() {
   weaponIdCounter += 1;
   return {
@@ -326,12 +331,17 @@ function processPack(rows) {
 function readProfile() {
   const modelKeywords = [...selectedKeywords.model];
   const specialRuleKeywords = [...selectedKeywords.specialRules];
-  const activeWeapons = weaponProfiles.filter((weapon) => weapon.name.trim() || weapon.range === "CC" || num(weapon.range) > 0 || num(weapon.ap) > 0 || weapon.keywords.length);
+  const activeWeapons = weaponProfiles.filter((weapon) => weapon.name.trim() || weapon.range === "CC" || num(weapon.ap) > 0 || weapon.keywords.length);
   const weaponKeywords = activeWeapons.flatMap((weapon) => weapon.keywords);
   const rangedWeapons = activeWeapons.filter(isWeaponRanged);
   const strongRangedWeapons = rangedWeapons.filter(isStrongRangedWeapon);
   const meleeWeapons = activeWeapons.filter((weapon) => weapon.range === "CC");
   const allKeywords = [...modelKeywords, ...weaponKeywords, ...specialRuleKeywords];
+  const tacticianValue = keywordValue(allKeywords, "Tactician");
+  const reconValue = reconScore(allKeywords);
+  const commandValue = tacticianValue
+    + (allKeywords.some((keyword) => normalizeKey(keyword) === "communications relay") ? 1 : 0)
+    + (allKeywords.some((keyword) => normalizeKey(keyword) === "combat team training") ? 1 : 0);
   return {
     unitName: el("unitName").value.trim(),
     role: el("role").value,
@@ -351,9 +361,9 @@ function readProfile() {
     RangedWeaponCount: rangedWeapons.length,
     StrongRangedWeaponCount: strongRangedWeapons.length,
     HasMeleeInput: meleeWeapons.length > 0,
-    TacticianValue: keywordValue(modelKeywords, "Tactician"),
-    ReconScore: keywordValue(modelKeywords, "Recon"),
-    CommandValue: keywordValue(modelKeywords, "Command"),
+    TacticianValue: tacticianValue,
+    ReconScore: reconValue,
+    CommandValue: commandValue,
     ManualAdjustment: num(el("manualAdjustment").value),
     weapons: activeWeapons,
     modelKeywords,
@@ -459,13 +469,13 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
   add(hasRampage, "HasRampage");
   add(duplicateRanged, "HasDuplicateRangedWeapon");
   add(hasFireControl && profile.RangedWeaponCount >= 2, "FireControlMultiWeapon");
-  add(hasFireControl && profile.RangedWeaponCount >= 2 && profile.StrongRangedWeaponCount >= 1, "FireControlStrongMultiWeapon");
+  add(hasFireControl && profile.RangedWeaponCount >= 2 && profile.StrongRangedWeaponCount >= 2, "FireControlStrongMultiWeapon");
   add(hasFireControl && duplicateRanged, "FireControlDuplicateRangedWeapon");
-  add(hasCommandKeyword && supportAura, "CommandSupport");
-  add(role === "Leader" && hasCommandKeyword, "RoleCommandLeader");
+  add(hasCommandKeyword || hasSpecialOrder, "CommandSupport");
+  add((role === "Leader" || role === "Legend") && (hasCommandKeyword || hasSpecialOrder), "RoleCommandLeader");
   add(role === "Support" && hasHeavy, "RoleHeavySupport");
-  add(role === "Legend" || hasKeyword(profile, "Named"), "NamedOrLegend");
-  add(hasKeyword(profile, "Secret Mission"), "SecretMissionTarget");
+  add(role === "Legend", "NamedOrLegend");
+  add(["Leader", "Specialist", "Support"].includes(role), "SecretMissionTarget");
   add(mobility, "HasMobilityKeyword");
   add(dropSuit, "HasDropSuit");
   add(deployment, "HasDeploymentTrick");
