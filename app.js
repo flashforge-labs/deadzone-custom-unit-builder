@@ -320,7 +320,11 @@ function hasAnyKeywordBase(profile, keywords) {
   return keywords.some((keyword) => hasKeywordBase(profile, keyword));
 }
 
-function scoreStat(value) {
+function scoreStatForBase(value) {
+  return value > 0 ? 9 - value : undefined;
+}
+
+function scoreStatOrZero(value) {
   return value > 0 ? 9 - value : 0;
 }
 
@@ -399,9 +403,9 @@ function baseNumeric(profile) {
   return {
     SP_Advance: profile.SP_Advance,
     SP_Sprint: profile.SP_Sprint,
-    RA_Score: scoreStat(profile.RA),
-    FI_Score: scoreStat(profile.FI),
-    SV_Score: scoreStat(profile.SV),
+    RA_Score: scoreStatForBase(profile.RA),
+    FI_Score: scoreStatForBase(profile.FI),
+    SV_Score: scoreStatForBase(profile.SV),
     AR: profile.AR,
     HP: profile.HP,
     SZ: profile.SZ,
@@ -563,10 +567,12 @@ function contribution(pack, values, active, intercept) {
 }
 
 function multiplierNumeric(profile, basePrediction) {
-  const base = baseNumeric(profile);
+  const raScore = scoreStatOrZero(profile.RA);
+  const fiScore = scoreStatOrZero(profile.FI);
+  const svScore = scoreStatOrZero(profile.SV);
   const keywordCount = profile.allKeywords.length;
-  const statQuality = base.RA_Score + base.FI_Score + base.SV_Score + profile.SP_Advance + profile.SP_Sprint + profile.AR + profile.HP + profile.SZ;
-  const combatQuality = base.RA_Score + base.FI_Score + base.SV_Score + profile.AR + profile.HP + profile.MaxRange + profile.MaxAP + profile.StrongRangedWeaponCount;
+  const statQuality = raScore + fiScore + svScore + profile.SP_Advance + profile.SP_Sprint + profile.AR + profile.HP + profile.SZ;
+  const combatQuality = raScore + fiScore + svScore + profile.AR + profile.HP + profile.MaxRange + profile.MaxAP + profile.StrongRangedWeaponCount;
   return {
     BasePrediction: basePrediction,
     LogBasePrediction: Math.log(Math.max(0.1, basePrediction)),
@@ -575,9 +581,9 @@ function multiplierNumeric(profile, basePrediction) {
     WeaponKeywordCount: profile.weaponKeywords.length,
     StatQuality: statQuality,
     CombatQuality: combatQuality,
-    RA_Score: base.RA_Score,
-    FI_Score: base.FI_Score,
-    SV_Score: base.SV_Score,
+    RA_Score: raScore,
+    FI_Score: fiScore,
+    SV_Score: svScore,
     SP_Advance: profile.SP_Advance,
     SP_Sprint: profile.SP_Sprint,
     AR: profile.AR,
