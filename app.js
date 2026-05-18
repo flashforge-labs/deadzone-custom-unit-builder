@@ -7,7 +7,6 @@ const MODEL_PATHS = {
   rounding: "model/rounding_model.csv",
   vp: "model/vp_model.csv",
 };
-const MODEL_BUNDLE_PATH = "./model/model_bundle.js";
 
 const el = (id) => document.getElementById(id);
 const statusEl = el("status");
@@ -928,34 +927,15 @@ function resetForm() {
 }
 
 async function loadModel() {
-  let meta;
-  let baseRows;
-  let multiplierRows;
-  let roundingRows;
-  let vpRows;
-  try {
-    const [metaResponse, fetchedBaseRows, fetchedMultiplierRows, fetchedRoundingRows, fetchedVpRows] = await Promise.all([
-      fetch(MODEL_PATHS.meta),
-      loadCsv(MODEL_PATHS.base),
-      loadCsv(MODEL_PATHS.multiplier),
-      loadCsv(MODEL_PATHS.rounding),
-      loadCsv(MODEL_PATHS.vp),
-    ]);
-    if (!metaResponse.ok) throw new Error("Could not load model metadata");
-    meta = await metaResponse.json();
-    baseRows = fetchedBaseRows;
-    multiplierRows = fetchedMultiplierRows;
-    roundingRows = fetchedRoundingRows;
-    vpRows = fetchedVpRows;
-  } catch (fetchError) {
-    const bundled = await import(MODEL_BUNDLE_PATH);
-    meta = bundled.meta;
-    baseRows = parseCsv(bundled.baseCsv);
-    multiplierRows = parseCsv(bundled.multiplierCsv);
-    roundingRows = parseCsv(bundled.roundingCsv);
-    vpRows = parseCsv(bundled.vpCsv);
-    console.warn("Using bundled model fallback", fetchError);
-  }
+  const [metaResponse, baseRows, multiplierRows, roundingRows, vpRows] = await Promise.all([
+    fetch(MODEL_PATHS.meta),
+    loadCsv(MODEL_PATHS.base),
+    loadCsv(MODEL_PATHS.multiplier),
+    loadCsv(MODEL_PATHS.rounding),
+    loadCsv(MODEL_PATHS.vp),
+  ]);
+  if (!metaResponse.ok) throw new Error("Could not load model metadata");
+  const meta = await metaResponse.json();
   model = {
     meta,
     base: processPack(baseRows),

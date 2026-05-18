@@ -19,6 +19,9 @@ Then open:
 http://localhost:8080
 ```
 
+Opening `index.html` directly from disk is not supported because browsers block
+some local file loads. Use GitHub Pages or a local server.
+
 ## GitHub Pages
 
 In GitHub:
