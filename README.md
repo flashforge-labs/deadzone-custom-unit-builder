@@ -42,3 +42,23 @@ The app uses derived calibration files in `model/`:
 - `model_meta.json`
 
 The private calibration workflow lives separately and should stay private.
+
+## Parity Tests
+
+Run the app/model parity check before deploying:
+
+```powershell
+npm test
+```
+
+For a full private calibration-list check, first generate the local fixture from
+the private calibration repo:
+
+```powershell
+npm run fixtures:parity
+npm test
+```
+
+`test/private-parity-fixtures.json` is ignored by git so the public repo does
+not publish private calibration rows. If that file is missing, `npm test` uses a
+small public sample fixture instead.

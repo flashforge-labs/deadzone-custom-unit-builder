@@ -7,3 +7,4 @@ Thumbs.db
 # Temporary files
 *.tmp
 ~$*
+test/private-parity-fixtures.json

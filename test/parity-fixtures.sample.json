@@ -1,0 +1,74 @@
+[
+  {
+    "id": "sample-1",
+    "name": "Sample melee specialist",
+    "input": {
+      "unitName": "Sample melee specialist",
+      "role": "Specialist",
+      "baseSize": "40mm",
+      "Qty": 1,
+      "SP_Advance": 2,
+      "SP_Sprint": 3,
+      "RA": 0,
+      "FI": 4,
+      "SV": 5,
+      "AR": 1,
+      "HP": 5,
+      "SZ": 3,
+      "ManualAdjustment": 0,
+      "modelKeywords": ["Agile", "Rampage"],
+      "specialRules": [],
+      "weapons": [
+        {
+          "name": "Sample gauntlet",
+          "range": "CC",
+          "ap": 0,
+          "keywords": ["Knockback", "Smash(1)"]
+        }
+      ]
+    },
+    "expected": {
+      "final": 24,
+      "vp": 2,
+      "continuous": 23.95820263886976,
+      "rawBase": 24.001455087907274,
+      "multiplier": 0.9981979238809022
+    }
+  },
+  {
+    "id": "sample-2",
+    "name": "Sample rifle troop",
+    "input": {
+      "unitName": "Sample rifle troop",
+      "role": "Troop",
+      "baseSize": "25mm",
+      "Qty": 1,
+      "SP_Advance": 1,
+      "SP_Sprint": 2,
+      "RA": 4,
+      "FI": 6,
+      "SV": 4,
+      "AR": 0,
+      "HP": 2,
+      "SZ": 1,
+      "ManualAdjustment": 0,
+      "modelKeywords": ["Scout"],
+      "specialRules": [],
+      "weapons": [
+        {
+          "name": "Sample rifle",
+          "range": "6",
+          "ap": 0,
+          "keywords": ["Rapid Fire"]
+        }
+      ]
+    },
+    "expected": {
+      "final": 10,
+      "vp": 1,
+      "continuous": 10.04362401779507,
+      "rawBase": 10.283449690816804,
+      "multiplier": 0.9766784804484531
+    }
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "name": "deadzone-custom-unit-builder",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/parity-test.mjs",
+    "test:parity": "node scripts/parity-test.mjs",
+    "fixtures:parity": "node scripts/build-parity-fixtures.mjs"
+  }
+}
