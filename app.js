@@ -21,6 +21,7 @@ const armyNameEl = el("armyName");
 const armyTotalEl = el("armyTotal");
 const armyListEl = el("armyList");
 const importArmyFileEl = el("importArmyFile");
+const addUnitButtonEl = el("addUnitToArmy");
 
 let model = null;
 const selectedKeywords = {
@@ -31,6 +32,7 @@ let weaponProfiles = [];
 let weaponIdCounter = 0;
 let armyUnits = [];
 let armyUnitIdCounter = 0;
+let editingUnitId = null;
 
 const UNIT_KEYWORD_NAMES = [
   "Aerial Deployment",
@@ -164,6 +166,15 @@ const RANGE_OPTIONS = [
 ];
 
 const BASE_SIZE_OPTIONS = ["25mm", "40mm", "50mm", "60mm"];
+const ROLE_SORT_ORDER = {
+  Legend: 0,
+  Leader: 1,
+  Troop: 2,
+  "Troop Specialist": 2,
+  "Specialist Troop": 2,
+  Specialist: 3,
+  Support: 4,
+};
 
 async function loadCsv(path) {
   const response = await fetch(path);
@@ -207,6 +218,14 @@ function selectOptions(values, labels = null) {
 
 function uniqueSorted(values) {
   return [...new Set(values.filter(Boolean))].sort((left, right) => left.localeCompare(right));
+}
+
+function roleSortRank(role) {
+  return ROLE_SORT_ORDER[role] ?? 99;
+}
+
+function updateArmyButtonLabel() {
+  addUnitButtonEl.textContent = editingUnitId ? "Update Unit" : "Add Unit";
 }
 
 function buildKeywordCatalog(meta) {
@@ -378,11 +397,16 @@ function renderArmyList() {
   }
 
   armyListEl.innerHTML = armyUnits
-    .map((unit) => `
+    .map((unit, index) => ({ unit, index }))
+    .sort((left, right) => {
+      const roleDelta = roleSortRank(left.unit.profile.role) - roleSortRank(right.unit.profile.role);
+      return roleDelta || left.index - right.index;
+    })
+    .map(({ unit }) => `
       <article class="army-unit-card" data-unit-id="${escapeHtml(unit.id)}">
         <header class="army-unit-head">
           <strong>${escapeHtml(unit.profile.unitName)}</strong>
-          <span>${escapeHtml(unit.profile.role)} · Qty ${escapeHtml(unit.profile.qty)} · Pts ${escapeHtml(unitTotal(unit))}</span>
+          <span>${escapeHtml(unit.profile.role)} / Qty ${escapeHtml(unit.profile.qty)} / Pts ${escapeHtml(unitTotal(unit))}</span>
         </header>
         <div class="army-stat-strip">
           <div><span>SP</span><strong>${escapeHtml(unit.profile.SP_Advance)}-${escapeHtml(unit.profile.SP_Sprint)}</strong></div>
@@ -424,11 +448,21 @@ function renderArmyList() {
 
 function addCurrentUnitToArmy() {
   if (!model) return;
-  armyUnits.push(currentUnitRecord());
+  const record = currentUnitRecord();
+  if (editingUnitId) {
+    record.id = editingUnitId;
+    armyUnits = armyUnits.map((unit) => (unit.id === editingUnitId ? record : unit));
+    editingUnitId = null;
+    updateArmyButtonLabel();
+  } else {
+    armyUnits.push(record);
+  }
   renderArmyList();
 }
 
 function loadUnitIntoForm(unit) {
+  editingUnitId = unit.id;
+  updateArmyButtonLabel();
   const profile = unit.profile;
   el("unitName").value = profile.unitName || "";
   el("role").value = profile.role || "Troop";
@@ -488,7 +522,11 @@ async function importArmyTemplate(file) {
   if (!file) return;
   const data = JSON.parse(await file.text());
   armyNameEl.value = data.armyName || "";
-  armyUnits = Array.isArray(data.units) ? data.units : [];
+  armyUnits = Array.isArray(data.units)
+    ? data.units.map((unit) => ({ ...unit, id: unit.id || `unit-${Date.now()}-${armyUnitIdCounter += 1}` }))
+    : [];
+  editingUnitId = null;
+  updateArmyButtonLabel();
   renderArmyList();
   importArmyFileEl.value = "";
 }
@@ -737,6 +775,8 @@ function enforceNumberLimits() {
 
 function resetForm() {
   form.reset();
+  editingUnitId = null;
+  updateArmyButtonLabel();
   selectedKeywords.model = [];
   selectedKeywords.specialRules = [];
   renderKeywordPicker(el("modelKeywordPicker"), "model", model.keywordCatalog?.unit || []);
@@ -776,6 +816,7 @@ async function loadModel() {
   };
   populateControls(meta);
   statusEl.value = "Ready";
+  updateArmyButtonLabel();
   renderArmyList();
   updateResult();
 }
@@ -793,6 +834,8 @@ el("addWeapon").addEventListener("click", () => {
 el("addUnitToArmy").addEventListener("click", addCurrentUnitToArmy);
 el("clearArmy").addEventListener("click", () => {
   armyUnits = [];
+  editingUnitId = null;
+  updateArmyButtonLabel();
   renderArmyList();
 });
 el("printArmy").addEventListener("click", () => window.print());
@@ -810,6 +853,10 @@ armyListEl.addEventListener("click", (event) => {
   if (!unit) return;
   if (button.dataset.action === "remove") {
     armyUnits = armyUnits.filter((entry) => entry.id !== unit.id);
+    if (editingUnitId === unit.id) {
+      editingUnitId = null;
+      updateArmyButtonLabel();
+    }
     renderArmyList();
   }
   if (button.dataset.action === "edit") {

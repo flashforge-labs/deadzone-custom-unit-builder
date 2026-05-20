@@ -1,7 +1,7 @@
 {
   "model": "Ridge",
-  "intercept": 19.444001847641672,
-  "feature_count": 14956,
+  "intercept": 22.86283351600429,
+  "feature_count": 20512,
   "numeric_features": [
     "SP_Advance",
     "SP_Sprint",
@@ -21,8 +21,16 @@
     "CommandValue"
   ],
   "binary_features": [
+    "HasRA",
+    "NoRA",
+    "HasFI",
+    "NoFI",
+    "HasAR",
+    "NoAR",
     "HasMelee",
     "HasRangedWeapon",
+    "MeleeOnly",
+    "RangedOnly",
     "HasHeavyWeapon",
     "HasBlastOrFrag",
     "HasIndirect",
@@ -288,16 +296,16 @@
     "Support": 22.0
   },
   "multiplier": {
-    "intercept": -0.00846088847984068,
+    "intercept": -0.0005626951317425498,
     "min_multiplier": 0.85,
     "max_multiplier": 1.15
   },
   "rounding": {
-    "intercept": -0.034737391925228386,
+    "intercept": 0.054631403459128175,
     "threshold": 0.5
   },
   "vp": {
-    "intercept": 1.9872937403272448,
+    "intercept": 1.8971187694938607,
     "min_vp": 0.0,
     "max_vp": 5.0
   }

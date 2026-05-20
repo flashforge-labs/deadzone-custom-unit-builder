@@ -71,6 +71,7 @@ export function processPack(rows) {
       .map((row) => ({
         items: String(row.Items || "").split(" | ").filter(Boolean),
         coefficient: num(row.Coefficient),
+        support: num(row.Support),
       })),
   };
 }
@@ -131,7 +132,7 @@ function hasAnyKeywordBase(profile, keywords) {
 }
 
 function scoreStatForBase(value) {
-  return value > 0 ? 9 - value : undefined;
+  return value > 0 ? 9 - value : 0;
 }
 
 function scoreStatOrZero(value) {
@@ -261,8 +262,16 @@ function binaryFeatures(profile, predictionForCostFlags = null) {
     if (condition) active.add(feature);
   };
 
+  add(profile.RA > 0, "HasRA");
+  add(profile.RA <= 0, "NoRA");
+  add(profile.FI > 0, "HasFI");
+  add(profile.FI <= 0, "NoFI");
+  add(profile.AR > 0, "HasAR");
+  add(profile.AR <= 0, "NoAR");
   add(hasMelee, "HasMelee");
   add(hasRanged, "HasRangedWeapon");
+  add(hasMelee && !hasRanged, "MeleeOnly");
+  add(hasRanged && !hasMelee, "RangedOnly");
   add(hasHeavy, "HasHeavyWeapon");
   add(hasBlastOrFrag, "HasBlastOrFrag");
   add(hasIndirect, "HasIndirect");
